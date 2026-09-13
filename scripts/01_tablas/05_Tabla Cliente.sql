@@ -1,8 +1,6 @@
 USE Sistema_Facturacion;
 GO
 
-DROP TABLE IF EXISTS dbo.Cliente;
-GO
 
 CREATE TABLE dbo.Cliente (
     id_cliente INT IDENTITY(1,1) NOT NULL,

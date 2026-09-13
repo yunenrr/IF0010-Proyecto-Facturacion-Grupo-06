@@ -1,8 +1,6 @@
 USE Sistema_Facturacion;
 GO
 
-DROP TABLE IF EXISTS dbo.Moneda;
-GO
 
 CREATE TABLE dbo.Moneda(
 	id_moneda TINYINT NOT NULL,

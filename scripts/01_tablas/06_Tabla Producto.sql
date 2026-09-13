@@ -1,9 +1,6 @@
 USE Sistema_Facturacion;
 GO
 
-DROP TABLE IF EXISTS dbo.Producto;
-GO
-
 CREATE TABLE dbo.Producto (
     id_producto INT IDENTITY(1,1) NOT NULL,
     codigo_interno VARCHAR(20) NOT NULL,
