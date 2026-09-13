@@ -9,11 +9,13 @@ DROP TABLE IF EXISTS dbo.Cliente_Historial;
 GO
 
 CREATE TABLE dbo.Cliente_Historial(
-	id_historial INT IDENTITY(1,1) NOT NULL,
+	id_historial BIGINT IDENTITY(1,1) NOT NULL,
 	id_cliente INT NOT NULL,
 	operacion CHAR(6) NOT NULL, -- INSERT | DELETE | UPDATE
-	usuario_responsable SYSNAME NOT NULL CONSTRAINT DF_Cliente_Historial_usuario_responsable DEFAULT ORIGINAL_LOGIN(),
-	fecha_cambio DATETIME2(3) NOT NULL CONSTRAINT DF_Cliente_Historial_fecha_cambio DEFAULT (SYSDATETIME()),
+	usuario_responsable SYSNAME NOT NULL 
+		CONSTRAINT DF_Cliente_Historial_usuario_responsable DEFAULT ORIGINAL_LOGIN(),
+	fecha_cambio DATETIME2(3) NOT NULL 
+		CONSTRAINT DF_Cliente_Historial_fecha_cambio DEFAULT (SYSDATETIME()),
 	descripcion_cambio NVARCHAR(500),
 	cedula_anterior VARCHAR(12),
 	cedula_nueva VARCHAR(12),
@@ -21,6 +23,8 @@ CREATE TABLE dbo.Cliente_Historial(
 	correo_nuevo VARCHAR(254),
 	telefono_anterior VARCHAR(12),
 	telefono_nuevo VARCHAR(12),
+	direccion_anterior NVARCHAR(200),
+	direccion_nueva NVARCHAR(200),
 	CONSTRAINT PK_Cliente_Historial PRIMARY KEY (id_historial),
 	CONSTRAINT CK_Cliente_Historial_operacion CHECK (operacion IN ('INSERT','UPDATE','DELETE'))
 );

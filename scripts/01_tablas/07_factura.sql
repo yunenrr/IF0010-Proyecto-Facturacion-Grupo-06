@@ -29,13 +29,13 @@ CREATE TABLE dbo.Factura (
 	CONSTRAINT FK_Factura_Cliente FOREIGN KEY (id_cliente_comprador)
 		REFERENCES dbo.Cliente (id_cliente),
 	CONSTRAINT FK_Factura_Estado_Factura FOREIGN KEY (id_estado_factura) 
-		REFERENCES dbo.Estado_Factura (codigo_estado),
+		REFERENCES dbo.Estado_Factura (id_estado_factura),
 	CONSTRAINT FK_Factura_Tipo_Documento FOREIGN KEY (id_tipo_documento) 
-		REFERENCES dbo.Tipo_Documento (codigo_identificador),
+		REFERENCES dbo.Tipo_Documento (id_tipo_documento),
 	CONSTRAINT FK_Factura_Empresa FOREIGN KEY (id_empresa_emisora) 
 		REFERENCES dbo.Empresa (id_empresa),
 	CONSTRAINT FK_Factura_Moneda FOREIGN KEY (id_moneda) 
-		REFERENCES dbo.Moneda (codigo_moneda),
+		REFERENCES dbo.Moneda (id_moneda),
 	CONSTRAINT CK_Factura_subtotal_positivo CHECK (subtotal_factura >= 0),
 	CONSTRAINT CK_Factura_total_descuentos CHECK (total_descuentos >= 0),
 	CONSTRAINT CK_Factura_total_impuestos CHECK (total_impuestos >= 0),

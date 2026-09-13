@@ -9,11 +9,13 @@ DROP TABLE IF EXISTS dbo.Producto_Historial;
 GO
 
 CREATE TABLE dbo.Producto_Historial(
-	id_historial INT IDENTITY(1,1) NOT NULL,
+	id_historial BIGINT IDENTITY(1,1) NOT NULL,
 	id_producto INT NOT NULL,
 	operacion CHAR(6) NOT NULL, -- INSERT | DELETE | UPDATE
-	usuario_responsable SYSNAME NOT NULL CONSTRAINT DF_Producto_Historial_usuario_responsable DEFAULT ORIGINAL_LOGIN(),
-	fecha_cambio DATETIME2(3) NOT NULL CONSTRAINT DF_Producto_Historial_fecha_cambio DEFAULT (SYSDATETIME()),
+	usuario_responsable SYSNAME NOT NULL 
+		CONSTRAINT DF_Producto_Historial_usuario_responsable DEFAULT ORIGINAL_LOGIN(),
+	fecha_cambio DATETIME2(3) NOT NULL 
+		CONSTRAINT DF_Producto_Historial_fecha_cambio DEFAULT (SYSDATETIME()),
 	descripcion_cambio NVARCHAR(500),
 	precio_unitario_anterior DECIMAL(18,5),
 	precio_unitario_nuevo DECIMAL(18,5),
