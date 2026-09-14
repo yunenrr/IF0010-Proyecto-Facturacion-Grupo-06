@@ -4,9 +4,6 @@
 USE Sistema_Facturacion;
 GO
 
-DROP TABLE IF EXISTS dbo.Estado_Factura;
-GO
-
 CREATE TABLE dbo.Estado_Factura(
 	id_estado_factura TINYINT NOT NULL, -- PK de Estado_Factura
 	estado VARCHAR(10) NOT NULL, -- Ej: BORRADOR | EMITIDA | PAGADA | CANCELADA

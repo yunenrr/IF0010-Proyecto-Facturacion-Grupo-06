@@ -4,9 +4,6 @@
 USE Sistema_Facturacion;
 GO
 
-DROP TABLE IF EXISTS dbo.Factura;
-GO
-
 CREATE TABLE dbo.Factura (
 	id_factura INT IDENTITY(1,1) NOT NULL, -- PK de Factura
 	id_tipo_documento TINYINT NOT NULL, -- FK a Tipo_Documento

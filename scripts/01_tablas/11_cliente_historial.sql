@@ -5,9 +5,6 @@
 USE Sistema_Facturacion;
 GO
 
-DROP TABLE IF EXISTS dbo.Cliente_Historial;
-GO
-
 CREATE TABLE dbo.Cliente_Historial(
 	id_historial BIGINT IDENTITY(1,1) NOT NULL,
 	id_cliente INT NOT NULL,
