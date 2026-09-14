@@ -1,15 +1,14 @@
---Tabla tipo_documento: 
-
-USE Sistema_Facturacion; 
+USE SISTEMA_FACTURACION;
 GO
 
-CREATE TABLE dbo.Tipo_Documento(
+-- Tabla TIPO_DOCUMENTO
+CREATE TABLE DBO.TIPO_DOCUMENTO
+(
+    ID_TIPO_DOCUMENTO TINYINT NOT NULL,
+    CODIGO_IDENTIFICADOR CHAR (3) NOT NULL, -- FAC | TIQ para identificar formato del código
+    DESCRIPCION NVARCHAR (50) NOT NULL,
 
-	id_tipo_documento TINYINT NOT NULL,
-	codigo_identificador CHAR(3) NOT NULL, --FAC | TIQ para identificar formato del código
-	descripcion NVARCHAR(50) NOT NULL, 
-
-	CONSTRAINT PK_Tipo_Documento PRIMARY KEY(id_tipo_documento),
-	CONSTRAINT UQ_Tipo_Documento_codigo_identificador UNIQUE (codigo_identificador)
+    CONSTRAINT PK_TIPO_DOCUMENTO PRIMARY KEY (ID_TIPO_DOCUMENTO),
+    CONSTRAINT UQ_TIPO_DOCUMENTO_CODIGO_IDENTIFICADOR UNIQUE (CODIGO_IDENTIFICADOR)
 );
 GO
