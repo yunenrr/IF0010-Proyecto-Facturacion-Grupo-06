@@ -1,19 +1,30 @@
+/* CUBRE EL REQUISITO DE CONSULTAR TOTALES DE UNA FACTURA POR IDENTIFICADOR DE
+   COMPROBANTE. ES UNIQUE FILTRANDO LOS NULL PORQUE EL CONSECUTIVO PUEDE SER
+   NULL MIENTRAS LA FACTURA ESTA EN BORRADOR */
 
-/* Cubre el requisito de consultar totales de una factura por identificador de comprobante.
-   Es unique filtrando los NULL porque el consecutivo puede ser NULL mientras la factura esta en BORRADOR */
-
-USE Sistema_Facturacion;
+USE SISTEMA_FACTURACION;
 GO
 
-IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'NC_Factura_consecutivo'
-AND object_id = OBJECT_ID(dbo.Factura))
+IF
+    EXISTS (
+        SELECT 1
+        FROM SYS.INDEXES
+        WHERE
+            NAME = 'NC_FACTURA_CONSECUTIVO'
+            AND OBJECT_ID = OBJECT_ID('DBO.FACTURA')
+    )
 BEGIN
-    DROP INDEX NC_Factura_consecutivo ON dbo.Factura;
+    DROP INDEX NC_FACTURA_CONSECUTIVO ON DBO.FACTURA;
 END
 GO
 
-CREATE UNIQUE NONCLUSTERED INDEX NC_Factura_consecutivo
-    ON dbo.Factura (consecutivo)
-    INCLUDE (subtotal_factura, total_descuentos, total_impuestos, monto_final)
-    WHERE consecutivo IS NOT NULL;
+CREATE UNIQUE NONCLUSTERED INDEX NC_FACTURA_CONSECUTIVO
+    ON DBO.FACTURA (CONSECUTIVO)
+    INCLUDE (
+        SUBTOTAL_FACTURA,
+        TOTAL_DESCUENTOS,
+        TOTAL_IMPUESTOS,
+        MONTO_FINAL
+    )
+    WHERE CONSECUTIVO IS NOT NULL;
 GO

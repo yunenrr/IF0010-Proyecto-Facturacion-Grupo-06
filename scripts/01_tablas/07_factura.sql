@@ -1,41 +1,55 @@
+/* dbo.FACTURA — ENCABEZADO DEL COMPROBANTE: GUARDA LOS DATOS PRINCIPALES DE LA COMPRA. */
 
-/* dbo.Factura — encabezado del comprobante: guarda los datos principales de la compra. */
-
-USE Sistema_Facturacion;
+USE SISTEMA_FACTURACION;
 GO
 
-CREATE TABLE dbo.Factura (
-	id_factura INT IDENTITY(1,1) NOT NULL, -- PK de Factura
-	id_tipo_documento TINYINT NOT NULL, -- FK a Tipo_Documento
-	id_empresa_emisora INT NOT NULL, -- FK a Empresa
-	id_cliente_comprador INT NOT NULL, -- FK a Cliente
-	id_estado_factura TINYINT NOT NULL, -- FK a Estado_Factura
-	id_moneda TINYINT NOT NULL, -- Divisa. FK a Moneda
-	consecutivo CHAR(20), -- AAAAMMDDHHMMSS-TipoDocumento
-	fecha_creacion DATETIME2(3) NOT NULL 
-		CONSTRAINT DF_Factura_fecha_creacion DEFAULT (SYSDATETIME()), -- Cuándo la fila entró a la base de datos
-	fecha_modificacion DATETIME2(3) NOT NULL 
-		CONSTRAINT DF_Factura_fecha_modificacion DEFAULT (SYSDATETIME()), -- Cuándo cambió desde la última vez
-	fecha_emision DATETIME2(0), -- Cuándo el comprobante cobró validez frente al cliente
-	subtotal_factura DECIMAL(18,2) NOT NULL,
-	total_descuentos DECIMAL(18,2) NOT NULL,
-	total_impuestos DECIMAL(18,2) NOT NULL,
-	monto_final DECIMAL(18,2) NOT NULL,
-	observaciones NVARCHAR(500),
-	CONSTRAINT PK_Factura PRIMARY KEY (id_factura),
-	CONSTRAINT FK_Factura_Cliente FOREIGN KEY (id_cliente_comprador)
-		REFERENCES dbo.Cliente (id_cliente),
-	CONSTRAINT FK_Factura_Estado_Factura FOREIGN KEY (id_estado_factura) 
-		REFERENCES dbo.Estado_Factura (id_estado_factura),
-	CONSTRAINT FK_Factura_Tipo_Documento FOREIGN KEY (id_tipo_documento) 
-		REFERENCES dbo.Tipo_Documento (id_tipo_documento),
-	CONSTRAINT FK_Factura_Empresa FOREIGN KEY (id_empresa_emisora) 
-		REFERENCES dbo.Empresa (id_empresa),
-	CONSTRAINT FK_Factura_Moneda FOREIGN KEY (id_moneda) 
-		REFERENCES dbo.Moneda (id_moneda),
-	CONSTRAINT CK_Factura_subtotal_positivo CHECK (subtotal_factura >= 0),
-	CONSTRAINT CK_Factura_total_descuentos CHECK (total_descuentos >= 0),
-	CONSTRAINT CK_Factura_total_impuestos CHECK (total_impuestos >= 0),
-	CONSTRAINT CK_Factura_monto_final CHECK (monto_final >= 0)
+DROP TABLE IF EXISTS dbo.FACTURA;
+GO
+
+CREATE TABLE dbo.FACTURA (
+    ID_FACTURA INT IDENTITY(1, 1) NOT NULL, -- PK DE FACTURA
+    ID_TIPO_DOCUMENTO TINYINT NOT NULL, -- FK A TIPO_DOCUMENTO
+    ID_EMPRESA_EMISORA INT NOT NULL, -- FK A EMPRESA
+    ID_CLIENTE_COMPRADOR INT NOT NULL, -- FK A CLIENTE
+    ID_ESTADO_FACTURA TINYINT NOT NULL, -- FK A ESTADO_FACTURA
+    ID_MONEDA TINYINT NOT NULL, -- DIVISA. FK A MONEDA
+    CONSECUTIVO CHAR(20), -- AAAAMMDDHHMMSS-TIPODOCUMENTO
+    FECHA_CREACION DATETIME2(3) NOT NULL
+        CONSTRAINT DF_FACTURA_FECHA_CREACION
+        DEFAULT (SYSDATETIME()), -- CUÁNDO ENTRÓ A LA BD
+    FECHA_MODIFICACION DATETIME2(3) NOT NULL
+        CONSTRAINT DF_FACTURA_FECHA_MODIFICACION
+        DEFAULT (SYSDATETIME()), -- CUÁNDO CAMBIÓ DESDE LA ÚLTIMA VEZ
+    FECHA_EMISION DATETIME2(0), -- CUÁNDO COBRÓ VALIDEZ FRENTE AL CLIENTE
+    SUBTOTAL_FACTURA DECIMAL(18, 2) NOT NULL,
+    TOTAL_DESCUENTOS DECIMAL(18, 2) NOT NULL,
+    TOTAL_IMPUESTOS DECIMAL(18, 2) NOT NULL,
+    MONTO_FINAL DECIMAL(18, 2) NOT NULL,
+    OBSERVACIONES NVARCHAR(500),
+    CONSTRAINT PK_FACTURA
+        PRIMARY KEY (ID_FACTURA),
+    CONSTRAINT FK_FACTURA_CLIENTE
+        FOREIGN KEY (ID_CLIENTE_COMPRADOR)
+        REFERENCES dbo.CLIENTE (ID_CLIENTE),
+    CONSTRAINT FK_FACTURA_ESTADO_FACTURA
+        FOREIGN KEY (ID_ESTADO_FACTURA)
+        REFERENCES dbo.ESTADO_FACTURA (ID_ESTADO_FACTURA),
+    CONSTRAINT FK_FACTURA_TIPO_DOCUMENTO
+        FOREIGN KEY (ID_TIPO_DOCUMENTO)
+        REFERENCES dbo.TIPO_DOCUMENTO (ID_TIPO_DOCUMENTO),
+    CONSTRAINT FK_FACTURA_EMPRESA
+        FOREIGN KEY (ID_EMPRESA_EMISORA)
+        REFERENCES dbo.EMPRESA (ID_EMPRESA),
+    CONSTRAINT FK_FACTURA_MONEDA
+        FOREIGN KEY (ID_MONEDA)
+        REFERENCES dbo.MONEDA (ID_MONEDA),
+    CONSTRAINT CK_FACTURA_SUBTOTAL_POSITIVO
+        CHECK (SUBTOTAL_FACTURA >= 0),
+    CONSTRAINT CK_FACTURA_TOTAL_DESCUENTOS
+        CHECK (TOTAL_DESCUENTOS >= 0),
+    CONSTRAINT CK_FACTURA_TOTAL_IMPUESTOS
+        CHECK (TOTAL_IMPUESTOS >= 0),
+    CONSTRAINT CK_FACTURA_MONTO_FINAL
+        CHECK (MONTO_FINAL >= 0)
 );
 GO
