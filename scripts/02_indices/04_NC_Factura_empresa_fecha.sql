@@ -1,16 +1,19 @@
-USE Sistema_Facturacion; 
+USE SISTEMA_FACTURACION;
 GO
 
---Índice Nonclustered de la tabla dbo.Factura
---Consutas sobre las facturas emitidas por empresa emisora y fecha
-
-IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'NC_Factura_id_empresa_emisora_fecha_emision' 
-AND object_id = OBJECT_ID('dbo.Factura'))
+-- Índice Nonclustered de la tabla DBO.FACTURA
+-- Consultas sobre las facturas emitidas por empresa emisora y fecha
+IF EXISTS (
+    SELECT 1
+    FROM SYS.INDEXES
+    WHERE NAME = 'NC_FACTURA_ID_EMPRESA_EMISORA_FECHA_EMISION'
+      AND OBJECT_ID = OBJECT_ID ('DBO.FACTURA')
+)
 BEGIN
-	DROP INDEX NC_Factura_id_empresa_emisora_fecha_emision ON dbo.Factura; 
+    DROP INDEX NC_FACTURA_ID_EMPRESA_EMISORA_FECHA_EMISION ON DBO.FACTURA;
 END
 GO
 
-CREATE NONCLUSTERED INDEX NC_Factura_id_empresa_emisora_fecha_emision
-ON dbo.Factura (id_empresa_emisora ASC, fecha_emision DESC); 
+CREATE NONCLUSTERED INDEX NC_FACTURA_ID_EMPRESA_EMISORA_FECHA_EMISION
+ON DBO.FACTURA (ID_EMPRESA_EMISORA ASC, FECHA_EMISION DESC);
 GO

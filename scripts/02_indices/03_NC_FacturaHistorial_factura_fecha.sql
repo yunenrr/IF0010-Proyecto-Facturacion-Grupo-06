@@ -1,16 +1,19 @@
-USE Sistema_Facturacion; 
+USE SISTEMA_FACTURACION;
 GO
 
---Índice Nonclustered de la tabla dbo.Factura_Historial
---Optimiza la auditoría cronológica de cambios sobre un comprobante
-
-IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'NC_FacturaHistorial_id_factura_fecha_cambio' 
-AND object_id = OBJECT_ID('dbo.Factura_Historial'))
+-- Índice Nonclustered de la tabla DBO.FACTURA_HISTORIAL
+-- Optimiza la auditoría cronológica de cambios sobre un comprobante
+IF EXISTS (
+    SELECT 1
+    FROM SYS.INDEXES
+    WHERE NAME = 'NC_FACTURAHISTORIAL_ID_FACTURA_FECHA_CAMBIO'
+      AND OBJECT_ID = OBJECT_ID ('DBO.FACTURA_HISTORIAL')
+)
 BEGIN
-	DROP INDEX NC_FacturaHistorial_id_factura_fecha_cambio ON dbo.Factura_Historial; 
+    DROP INDEX NC_FACTURAHISTORIAL_ID_FACTURA_FECHA_CAMBIO ON DBO.FACTURA_HISTORIAL;
 END
 GO
 
-CREATE NONCLUSTERED INDEX NC_FacturaHistorial_id_factura_fecha_cambio
-ON dbo.Factura_Historial (id_factura ASC, fecha_cambio ASC); 
+CREATE NONCLUSTERED INDEX NC_FACTURAHISTORIAL_ID_FACTURA_FECHA_CAMBIO
+ON DBO.FACTURA_HISTORIAL (ID_FACTURA ASC, FECHA_CAMBIO ASC);
 GO
