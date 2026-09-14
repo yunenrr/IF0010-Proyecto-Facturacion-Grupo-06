@@ -1,24 +1,24 @@
+/* dbo.PRODUCTO_HISTORIAL — auditoría del catálogo de productos.
+   Sin FK hacia dbo.PRODUCTO porque debe registrar el DELETE de productos que ya no existen. */
 
-/* dbo.Producto_Historial — auditoría del catálogo de productos.
-   Sin FK hacia dbo.Producto porque debe registrar el DELETE de productos que ya no existen. */
-
-USE Sistema_Facturacion;
+USE SISTEMA_FACTURACION;
 GO
 
-CREATE TABLE dbo.Producto_Historial(
-	id_historial BIGINT IDENTITY(1,1) NOT NULL,
-	id_producto INT NOT NULL,
-	operacion CHAR(6) NOT NULL, -- INSERT | DELETE | UPDATE
-	usuario_responsable SYSNAME NOT NULL 
-		CONSTRAINT DF_Producto_Historial_usuario_responsable DEFAULT ORIGINAL_LOGIN(),
-	fecha_cambio DATETIME2(3) NOT NULL 
-		CONSTRAINT DF_Producto_Historial_fecha_cambio DEFAULT (SYSDATETIME()),
-	descripcion_cambio NVARCHAR(500),
-	precio_unitario_anterior DECIMAL(18,5),
-	precio_unitario_nuevo DECIMAL(18,5),
-	porcentaje_impuesto_anterior DECIMAL(5,4),
-	porcentaje_impuesto_nuevo DECIMAL(5,4),
-	CONSTRAINT PK_Producto_Historial PRIMARY KEY (id_historial),
-	CONSTRAINT CK_Producto_Historial_operacion CHECK (operacion IN ('INSERT','UPDATE','DELETE'))
+DROP TABLE IF EXISTS dbo.PRODUCTO_HISTORIAL;
+GO
+
+CREATE TABLE dbo.PRODUCTO_HISTORIAL (
+    ID_HISTORIAL BIGINT IDENTITY (1,1) NOT NULL,
+    ID_PRODUCTO INT NOT NULL,
+    OPERACION CHAR (6) NOT NULL, -- INSERT | DELETE | UPDATE
+    USUARIO_RESPONSABLE SYSNAME NOT NULL CONSTRAINT DF_PRODUCTO_HISTORIAL_USUARIO_RESPONSABLE DEFAULT ORIGINAL_LOGIN (),
+    FECHA_CAMBIO DATETIME2 (3) NOT NULL CONSTRAINT DF_PRODUCTO_HISTORIAL_FECHA_CAMBIO DEFAULT (SYSDATETIME ()),
+    DESCRIPCION_CAMBIO NVARCHAR (500),
+    PRECIO_UNITARIO_ANTERIOR DECIMAL (18,5),
+    PRECIO_UNITARIO_NUEVO DECIMAL (18,5),
+    PORCENTAJE_IMPUESTO_ANTERIOR DECIMAL (5,4),
+    PORCENTAJE_IMPUESTO_NUEVO DECIMAL (5,4),
+    CONSTRAINT PK_PRODUCTO_HISTORIAL PRIMARY KEY (ID_HISTORIAL),
+    CONSTRAINT CK_PRODUCTO_HISTORIAL_OPERACION CHECK (OPERACION IN ('INSERT','UPDATE','DELETE'))
 );
 GO
