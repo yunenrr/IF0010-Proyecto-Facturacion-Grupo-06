@@ -1,17 +1,16 @@
-
 /* Cubre el requisito de consultar facturas por comprador.*/
 
-USE Sistema_Facturacion;
+USE SISTEMA_FACTURACION;
 GO
 
-IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'NC_Factura_cliente_fecha'
-AND object_id = OBJECT_ID(dbo.Factura))
+IF EXISTS (SELECT 1 FROM sys.indexes WHERE name = 'NC_FACTURA_CLIENTE_FECHA'
+AND object_id = OBJECT_ID ('dbo.FACTURA'))
 BEGIN
-    DROP INDEX NC_Factura_cliente_fecha ON dbo.Factura;
+    DROP INDEX NC_FACTURA_CLIENTE_FECHA ON dbo.FACTURA;
 END
 GO
 
-CREATE NONCLUSTERED INDEX NC_Factura_cliente_fecha
-    ON dbo.Factura (id_cliente_comprador, fecha_emision DESC)
-    INCLUDE (consecutivo, monto_final)
+CREATE NONCLUSTERED INDEX NC_FACTURA_CLIENTE_FECHA
+    ON dbo.FACTURA (ID_CLIENTE_COMPRADOR,FECHA_EMISION DESC)
+    INCLUDE (CONSECUTIVO,MONTO_FINAL);
 GO

@@ -1,15 +1,17 @@
+/* dbo.ESTADO_FACTURA — catálogo del ciclo de vida del comprobante. */
 
-/* dbo.Estado_Factura — catálogo del ciclo de vida del comprobante. */
-
-USE Sistema_Facturacion;
+USE SISTEMA_FACTURACION;
 GO
 
-CREATE TABLE dbo.Estado_Factura(
-	id_estado_factura TINYINT NOT NULL, -- PK de Estado_Factura
-	estado VARCHAR(10) NOT NULL, -- Ej: BORRADOR | EMITIDA | PAGADA | CANCELADA
-	descripcion_estado NVARCHAR(50),
-	CONSTRAINT PK_Estado_Factura PRIMARY KEY (id_estado_factura),
-	CONSTRAINT UQ_Estado_Factura_estado UNIQUE (estado),
-	CONSTRAINT UQ_Estado_Factura_descripcion_estado UNIQUE (descripcion_estado)
+DROP TABLE IF EXISTS dbo.ESTADO_FACTURA;
+GO
+
+CREATE TABLE dbo.ESTADO_FACTURA (
+    ID_ESTADO_FACTURA TINYINT NOT NULL, -- PK de ESTADO_FACTURA
+    ESTADO VARCHAR (10) NOT NULL, -- Ej: BORRADOR | EMITIDA | PAGADA | CANCELADA
+    DESCRIPCION_ESTADO NVARCHAR (50),
+    CONSTRAINT PK_ESTADO_FACTURA PRIMARY KEY (ID_ESTADO_FACTURA),
+    CONSTRAINT UQ_ESTADO_FACTURA_ESTADO UNIQUE (ESTADO),
+    CONSTRAINT UQ_ESTADO_FACTURA_DESCRIPCION_ESTADO UNIQUE (DESCRIPCION_ESTADO)
 );
 GO
