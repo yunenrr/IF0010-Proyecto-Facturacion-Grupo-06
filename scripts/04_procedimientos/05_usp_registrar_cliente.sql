@@ -30,7 +30,8 @@ BEGIN
         SET @TELEFONO = LTRIM(RTRIM(@TELEFONO));
         SET @OTRAS_SENAS = LTRIM(RTRIM(@OTRAS_SENAS));
 
-        IF NULLIF(@CEDULA, '') IS NULL
+        IF
+            NULLIF(@CEDULA, '') IS NULL
             OR NULLIF(@NOMBRE, N'') IS NULL
             OR NULLIF(@CORREO, '') IS NULL
             OR NULLIF(@TELEFONO, '') IS NULL
@@ -40,29 +41,40 @@ BEGIN
 
         IF @CEDULA LIKE '%[^0-9]%' OR LEN(@CEDULA) NOT BETWEEN 9 AND 12
             THROW 50802,
-                N'La cédula debe tener solo dígitos y entre 9 y 12 caracteres.',
-                1;
+            N'La cédula debe tener solo dígitos y entre 9 y 12 caracteres.',
+            1;
 
-        IF EXISTS (SELECT 1 FROM DBO.CLIENTE WHERE CEDULA_CLIENTE = @CEDULA)
+        IF
+            EXISTS (
+                SELECT 1 FROM DBO.CLIENTE
+                WHERE CEDULA_CLIENTE = @CEDULA
+            )
             THROW 50803, N'Ya existe un cliente con esa cédula.', 1;
 
         IF @TELEFONO LIKE '%[^0-9]%' OR LEN(@TELEFONO) NOT BETWEEN 8 AND 12
             THROW 50804,
-                N'El teléfono debe tener solo dígitos y entre 8 y 12 caracteres.',
-                1;
+            N'El teléfono debe tener solo dígitos y entre 8 y 12 caracteres.',
+            1;
 
-        IF @CORREO LIKE '% %'
+        IF
+            @CORREO LIKE '% %'
             OR @CORREO LIKE '%@%@%'
             OR @CORREO NOT LIKE '_%@_%._%'
             THROW 50805, N'El correo no tiene un formato válido.', 1;
 
-        IF EXISTS (SELECT 1 FROM DBO.CLIENTE WHERE CORREO_CLIENTE = @CORREO)
+        IF
+            EXISTS (
+                SELECT 1 FROM DBO.CLIENTE
+                WHERE CORREO_CLIENTE = @CORREO
+            )
             THROW 50806, N'Ese correo ya pertenece a otro cliente.', 1;
 
-        IF NOT EXISTS (SELECT 1 FROM DBO.DISTRITO
-                       WHERE ID_DISTRITO = @ID_DISTRITO)
+        IF
+            NOT EXISTS (
+                SELECT 1 FROM DBO.DISTRITO
+                WHERE ID_DISTRITO = @ID_DISTRITO
+            )
             THROW 50807, N'El distrito no existe.', 1;
-
 
         BEGIN TRANSACTION;
 
@@ -72,10 +84,12 @@ BEGIN
         SET @ID_DIRECCION = SCOPE_IDENTITY();
 
         INSERT INTO DBO.CLIENTE
-            (CEDULA_CLIENTE, NOMBRE_CLIENTE, CORREO_CLIENTE,
-             TELEFONO_CLIENTE, ID_DIRECCION)
+        (
+            CEDULA_CLIENTE, NOMBRE_CLIENTE, CORREO_CLIENTE,
+            TELEFONO_CLIENTE, ID_DIRECCION
+        )
         VALUES
-            (@CEDULA, @NOMBRE, @CORREO, @TELEFONO, @ID_DIRECCION);
+        (@CEDULA, @NOMBRE, @CORREO, @TELEFONO, @ID_DIRECCION);
 
         SET @NUEVO_ID = SCOPE_IDENTITY();
 
