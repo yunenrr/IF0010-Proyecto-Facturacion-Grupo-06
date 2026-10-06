@@ -51,10 +51,8 @@ BEGIN
             )
             THROW 50803, N'Ya existe un cliente con esa cédula.', 1;
 
-        IF @TELEFONO LIKE '%[^0-9]%' OR LEN(@TELEFONO) NOT BETWEEN 8 AND 12
-            THROW 50804,
-            N'El teléfono debe tener solo dígitos y entre 8 y 12 caracteres.',
-            1;
+        IF @TELEFONO LIKE '%[^0-9]%' OR LEN(@TELEFONO) <> 8
+            THROW 50804, N'El teléfono debe tener exactamente 8 dígitos.', 1;
 
         IF
             @CORREO LIKE '% %'
@@ -86,10 +84,14 @@ BEGIN
         INSERT INTO DBO.CLIENTE
         (
             CEDULA_CLIENTE, NOMBRE_CLIENTE, CORREO_CLIENTE,
-            TELEFONO_CLIENTE, ID_DIRECCION
+            TELEFONO_CLIENTE, ID_DIRECCION, FECHA_REGISTRO,
+            FECHA_ACTUALIZACION
         )
         VALUES
-        (@CEDULA, @NOMBRE, @CORREO, @TELEFONO, @ID_DIRECCION);
+        (
+            @CEDULA, @NOMBRE, @CORREO, @TELEFONO, @ID_DIRECCION,
+            SYSDATETIME(), SYSDATETIME()
+        );
 
         SET @NUEVO_ID = SCOPE_IDENTITY();
 

@@ -27,7 +27,7 @@ BEGIN
                 THROW 50601, N'El producto no existe.', 1;
             END
 
-        --Validar que la actualización sea de al menos un párámetro
+        --Validar que la actualización sea de al menos un parámetro
         IF @NUEVO_PRECIO IS NULL AND @NUEVA_TASA IS NULL
             BEGIN
                 THROW 50602,
@@ -46,10 +46,7 @@ BEGIN
             @NUEVA_TASA IS NOT NULL
             AND @NUEVA_TASA NOT IN (0.0000, 0.0100, 0.0200, 0.0400, 0.1300)
             BEGIN
-                THROW 50604,
-                N'La tasa de impuesto no corresponde 
-                a una tarifa oficial de IVA.',
-                1;
+                THROW 50604, N'La tasa no es una tarifa oficial de IVA.', 1;
             END
 
         BEGIN TRANSACTION;

@@ -1,8 +1,7 @@
-
 USE SISTEMA_FACTURACION;
 GO
 
---Creación de la tabla PROVINCIA: 
+--Creación de la tabla PROVINCIA:
 CREATE TABLE DBO.PROVINCIA
 (
     ID_PROVINCIA TINYINT NOT NULL,
@@ -14,7 +13,7 @@ CREATE TABLE DBO.PROVINCIA
 GO
 
 ----------------------------------------------------------------
---Creación de la tabla CANTON: 
+--Creación de la tabla CANTON:
 CREATE TABLE DBO.CANTON
 (
     ID_CANTON SMALLINT NOT NULL,
@@ -31,7 +30,7 @@ CREATE TABLE DBO.CANTON
 GO
 
 -----------------------------------------------------------------
---Creación de la tabla DISTRITO:  
+--Creación de la tabla DISTRITO:
 CREATE TABLE DBO.DISTRITO
 (
     ID_DISTRITO INT NOT NULL,
@@ -48,7 +47,7 @@ CREATE TABLE DBO.DISTRITO
 GO
 
 -----------------------------------------------------------------
---Creación de la tabla DIRECCION 
+--Creación de la tabla DIRECCION
 CREATE TABLE DBO.DIRECCION
 (
     ID_DIRECCION INT IDENTITY (1, 1) NOT NULL,
