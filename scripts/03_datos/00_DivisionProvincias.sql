@@ -30,7 +30,7 @@ BEGIN
             (5, N'Guanacaste'),
             (6, N'Puntarenas'),
             (7, N'Limón')
-        ) AS V (ID_PROVINCIA, NOMBRE_PROVINCIA)
+        ) AS V(ID_PROVINCIA, NOMBRE_PROVINCIA)
         WHERE NOT EXISTS (
             SELECT 1 FROM DBO.PROVINCIA AS P
             WHERE P.ID_PROVINCIA = V.ID_PROVINCIA
@@ -68,7 +68,7 @@ BEGIN
             (701, 7, N'Limón'),
             (702, 7, N'Pococí'),
             (703, 7, N'Siquirres')
-        ) AS V (ID_CANTON, ID_PROVINCIA, NOMBRE_CANTON)
+        ) AS V(ID_CANTON, ID_PROVINCIA, NOMBRE_CANTON)
         WHERE NOT EXISTS (
             SELECT 1 FROM DBO.CANTON AS C
             WHERE C.ID_CANTON = V.ID_CANTON
@@ -164,7 +164,7 @@ BEGIN
             (70301, 703, N'Siquirres'),
             (70302, 703, N'Pacuarito'),
             (70303, 703, N'Florida')
-        ) AS V (ID_DISTRITO, ID_CANTON, NOMBRE_DISTRITO)
+        ) AS V(ID_DISTRITO, ID_CANTON, NOMBRE_DISTRITO)
         WHERE NOT EXISTS (
             SELECT 1 FROM DBO.DISTRITO AS D
             WHERE D.ID_DISTRITO = V.ID_DISTRITO

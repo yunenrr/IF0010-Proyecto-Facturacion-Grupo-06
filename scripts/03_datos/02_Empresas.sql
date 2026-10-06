@@ -27,78 +27,93 @@ BEGIN
 
     BEGIN TRY
         IF EXISTS (SELECT 1 FROM DBO.EMPRESA)
-        BEGIN
-            SET @MENSAJE = N'dbo.EMPRESA ya tiene datos. No se cargó nada.';
-            RETURN;
-        END;
+            BEGIN
+                SET @MENSAJE = N'dbo.EMPRESA ya tiene datos. No se cargó nada.';
+                RETURN;
+            END;
 
         IF (SELECT COUNT(*) FROM DBO.DIRECCION) < 100
             THROW 50751,
-                N'Se necesitan al menos 100 direcciones. Ejecute primero la carga de DIRECCION.',
-                1;
+            N'Se necesitan al menos 100 direcciones.',
+            1;
 
         INSERT INTO @Rubros (ID_RUBRO, PREFIJO, ACTIVIDAD)
         VALUES
-            (1,  N'Moda',        N'Ropa y Vestimenta'),
-            (2,  N'Electro',     N'Electrodomésticos'),
-            (3,  N'Tecno',       N'Tecnología y Computación'),
-            (4,  N'Súper',       N'Supermercado y Alimentos'),
-            (5,  N'Ferretería',  N'Ferretería y Construcción'),
-            (6,  N'Clínica',     N'Salud Privada'),
-            (7,  N'Instituto',   N'Servicios Educativos'),
-            (8,  N'Muebles',     N'Muebles y Hogar'),
-            (9,  N'Consultores', N'Servicios Profesionales'),
-            (10, N'Transportes', N'Transporte y Logística');
+        (1, N'Moda', N'Ropa y Vestimenta'),
+        (2, N'Electro', N'Electrodomésticos'),
+        (3, N'Tecno', N'Tecnología y Computación'),
+        (4, N'Súper', N'Supermercado y Alimentos'),
+        (5, N'Ferretería', N'Ferretería y Construcción'),
+        (6, N'Clínica', N'Salud Privada'),
+        (7, N'Instituto', N'Servicios Educativos'),
+        (8, N'Muebles', N'Muebles y Hogar'),
+        (9, N'Consultores', N'Servicios Profesionales'),
+        (10, N'Transportes', N'Transporte y Logística');
 
         INSERT INTO @Sufijos (ID_SUFIJO, SUFIJO)
         VALUES
-            (1,  N'Los Alpes'),
-            (2,  N'El Roble'),
-            (3,  N'La Estrella'),
-            (4,  N'Del Valle'),
-            (5,  N'Central'),
-            (6,  N'Pacífico'),
-            (7,  N'Cordillera'),
-            (8,  N'Real'),
-            (9,  N'Sol'),
-            (10, N'Horizonte');
+        (1, N'Los Alpes'),
+        (2, N'El Roble'),
+        (3, N'La Estrella'),
+        (4, N'Del Valle'),
+        (5, N'Central'),
+        (6, N'Pacífico'),
+        (7, N'Cordillera'),
+        (8, N'Real'),
+        (9, N'Sol'),
+        (10, N'Horizonte');
 
         BEGIN TRANSACTION;
 
-        ;WITH DIR AS (
-            SELECT ID_DIRECCION,
-                   ROW_NUMBER() OVER (ORDER BY ID_DIRECCION) AS RN
+        WITH DIR AS (
+            SELECT
+                ID_DIRECCION,
+                ROW_NUMBER() OVER (ORDER BY ID_DIRECCION) AS RN
             FROM DBO.DIRECCION
         ),
+
         BASE AS (
-            SELECT ROW_NUMBER() OVER (ORDER BY R.ID_RUBRO, S.ID_SUFIJO) AS N,
-                   R.PREFIJO,
-                   R.ACTIVIDAD,
-                   S.SUFIJO
+            SELECT
+                R.PREFIJO,
+                R.ACTIVIDAD,
+                S.SUFIJO,
+                ROW_NUMBER() OVER (ORDER BY R.ID_RUBRO, S.ID_SUFIJO) AS N
             FROM @Rubros AS R
             CROSS JOIN @Sufijos AS S
         )
+
         INSERT INTO DBO.EMPRESA
-            (NOMBRE_COMERCIAL, RAZON_SOCIAL, CEDULA_EMPRESA, ID_DIRECCION,
-             TELEFONO_EMPRESA, CORREO_ELECTRONICO, FECHA_CREACION, ESTA_ACTIVA)
-        SELECT CONCAT(B.PREFIJO, N' ', B.SUFIJO),
-               CONCAT(N'Grupo ', B.SUFIJO, N' ', B.ACTIVIDAD, N' S.A.'),
-               CONCAT('3101', RIGHT(CONCAT('000000', B.N), 6)),
-               D.ID_DIRECCION,
-               CONCAT('22', RIGHT(CONCAT('000000', B.N), 6)),
-               CONCAT('contacto', B.N, '@empresas.cr'),
-               DATEADD(DAY, -CAST(730 + (B.N * 13) % 1000 AS INT), SYSDATETIME()),
-               CASE WHEN B.N % 10 = 0 THEN 0 ELSE 1 END
+        (
+            NOMBRE_COMERCIAL, RAZON_SOCIAL, CEDULA_EMPRESA, ID_DIRECCION,
+            TELEFONO_EMPRESA, CORREO_ELECTRONICO, FECHA_CREACION, ESTA_ACTIVA
+        )
+        SELECT
+            CONCAT(B.PREFIJO, N' ', B.SUFIJO) AS NOMBRE_COMERCIAL,
+            CONCAT(
+                N'Grupo ', B.SUFIJO, N' ', B.ACTIVIDAD, N' S.A.'
+            ) AS RAZON_SOCIAL,
+            CONCAT(
+                '3101', RIGHT(CONCAT('000000', B.N), 6)
+            ) AS CEDULA_EMPRESA,
+            D.ID_DIRECCION,
+            CONCAT(
+                '22', RIGHT(CONCAT('000000', B.N), 6)
+            ) AS TELEFONO_EMPRESA,
+            CONCAT('contacto', B.N, '@empresas.cr') AS CORREO_ELECTRONICO,
+            DATEADD(
+                DAY, -CAST(730 + (B.N * 13) % 1000 AS INT), SYSDATETIME()
+            ) AS FECHA_CREACION,
+            CASE WHEN B.N % 10 = 0 THEN 0 ELSE 1 END AS ESTA_ACTIVA
         FROM BASE AS B
         INNER JOIN DIR AS D
-            ON D.RN = B.N;
+            ON B.N = D.RN;
 
         SET @FILAS_INSERTADAS = @@ROWCOUNT;
 
         IF @FILAS_INSERTADAS <> 100
             THROW 50752,
-                N'La cantidad de empresas insertadas no coincide con las 100 esperadas.',
-                1;
+            N'Las empresas insertadas no son las 100 esperadas.',
+            1;
 
         COMMIT TRANSACTION;
     END TRY
