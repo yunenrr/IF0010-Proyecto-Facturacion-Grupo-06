@@ -44,13 +44,10 @@ BEGIN
         IF
             @TELEFONO IS NOT NULL
             AND (
-                LEN(@TELEFONO) <> 11
+                LEN(@TELEFONO) <> 8
                 OR @TELEFONO LIKE '%[^0-9]%'
-                OR LEFT(@TELEFONO, 3) <> '506'
             )
-            THROW 50303,
-            N'El teléfono debe tener 11 dígitos y empezar con 506.',
-            1;
+            THROW 50303, N'El teléfono debe tener exactamente 8 dígitos.', 1;
 
         IF
             @CORREO IS NOT NULL

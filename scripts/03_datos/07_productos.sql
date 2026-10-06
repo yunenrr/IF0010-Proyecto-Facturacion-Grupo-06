@@ -1,4 +1,4 @@
-/* DATOS DE DBO.PRODUCTO: 1 000 PRODUCTOS Y SERVICIOS EN 10 RUBROS.*/
+/* DATOS DE DBO.PRODUCTO: 1 000 PRODUCTOS Y SERVICIOS EN 10 RUBROS. */
 
 USE SISTEMA_FACTURACION;
 GO
@@ -61,7 +61,7 @@ BEGIN
                 (8, 'MUE', 'PRD', 701, 800, 500),
                 (9, 'CON', 'SRV', 801, 900, 1000),
                 (10, 'TRA', 'SRV', 901, 1000, 500)
-            ) AS R(ID_RUBRO, CODIGO_RUBRO, TIPO, DESDE, HASTA, REDONDEO)
+            ) AS R (ID_RUBRO, CODIGO_RUBRO, TIPO, DESDE, HASTA, REDONDEO)
         ),
 
         BASE AS (
@@ -174,7 +174,7 @@ BEGIN
                 (10, 7, N'Distribución a comercios', 0.13, 80000, 400000),
                 (10, 8, N'Camión con chofer por día', 0.13, 90000, 300000),
                 (10, 9, N'Mudanza residencial', 0.13, 120000, 500000)
-            ) AS B(ID_RUBRO, ORDEN, NOMBRE, TASA, PRECIO_MIN, PRECIO_MAX)
+            ) AS B (ID_RUBRO, ORDEN, NOMBRE, TASA, PRECIO_MIN, PRECIO_MAX)
         ),
 
         ATRIBUTO_A AS (
@@ -225,7 +225,7 @@ BEGIN
                 (10, 2, N'- Ruta Zona Sur'),
                 (10, 3, N'- Ruta Caribe'),
                 (10, 4, N'- Ruta Pacífico')
-            ) AS A(ID_RUBRO, ORDEN, TEXTO)
+            ) AS A (ID_RUBRO, ORDEN, TEXTO)
         ),
 
         ATRIBUTO_B AS (
@@ -264,7 +264,7 @@ BEGIN
                 (9, 4, N'plan Corporativo'),
                 (10, 0, N'servicio Estándar'),
                 (10, 1, N'servicio Express')
-            ) AS B(ID_RUBRO, ORDEN, TEXTO)
+            ) AS B (ID_RUBRO, ORDEN, TEXTO)
         ),
 
         CONTEO AS (

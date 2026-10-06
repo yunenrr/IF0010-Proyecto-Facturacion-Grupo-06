@@ -1,10 +1,8 @@
 /* DBO.USP_ACTUALIZAR_EMPRESA — ACTUALIZA LOS DATOS EDITABLES DE UNA EMPRESA
-   EMISORA, EN UNA SOLA TRANSACCIÓN. */
+   EMISORA, EN UNA SOLA TRANSACCIÓN. SOLO CAMBIA LOS PARÁMETROS QUE SE ENVÍAN;
+   LOS QUE LLEGAN EN NULL O VACÍOS CONSERVAN SU VALOR ACTUAL. */
 
 USE SISTEMA_FACTURACION;
-GO
-
-SELECT * FROM DBO.EMPRESA;
 GO
 
 CREATE OR ALTER PROCEDURE DBO.USP_ACTUALIZAR_EMPRESA
@@ -43,7 +41,7 @@ BEGIN
         WHERE ID_EMPRESA = @ID_EMPRESA;
 
         IF @NOMBRE_ACTUAL IS NULL
-            THROW 50801, N'La empresa no existe.', 1;
+            THROW 50901, N'La empresa no existe.', 1;
 
         IF
             @NOMBRE_COMERCIAL IS NULL
@@ -53,18 +51,15 @@ BEGIN
             AND @ID_DISTRITO IS NULL
             AND @OTRAS_SENAS IS NULL
             AND @ESTA_ACTIVA IS NULL
-            THROW 50802, N'No se indicó ningún dato para actualizar.', 1;
+            THROW 50902, N'No se indicó ningún dato para actualizar.', 1;
 
         IF
             @TELEFONO_EMPRESA IS NOT NULL
             AND (
-                LEN(@TELEFONO_EMPRESA) <> 11
+                LEN(@TELEFONO_EMPRESA) <> 8
                 OR @TELEFONO_EMPRESA LIKE '%[^0-9]%'
-                OR LEFT(@TELEFONO_EMPRESA, 3) <> '506'
             )
-            THROW 50803,
-            N'El teléfono debe tener 11 dígitos y empezar con 506.',
-            1;
+            THROW 50903, N'El teléfono debe tener exactamente 8 dígitos.', 1;
 
         IF
             @CORREO_ELECTRONICO IS NOT NULL
@@ -73,7 +68,7 @@ BEGIN
                 OR @CORREO_ELECTRONICO LIKE '%@%@%'
                 OR @CORREO_ELECTRONICO LIKE '% %'
             )
-            THROW 50804, N'El correo no tiene un formato válido.', 1;
+            THROW 50904, N'El correo no tiene un formato válido.', 1;
 
         IF @NOMBRE_COMERCIAL IS NOT NULL
             BEGIN
@@ -87,7 +82,7 @@ BEGIN
                 );
 
                 IF @PREFIJO_NUEVO <> @PREFIJO_ACTUAL
-                    THROW 50805,
+                    THROW 50905,
                     N'El nombre comercial debe conservar el prefijo de rubro.',
                     1;
             END;
@@ -95,7 +90,7 @@ BEGIN
         IF
             (@ID_DISTRITO IS NULL AND @OTRAS_SENAS IS NOT NULL)
             OR (@ID_DISTRITO IS NOT NULL AND @OTRAS_SENAS IS NULL)
-            THROW 50806,
+            THROW 50906,
             N'Para cambiar la dirección se indican el distrito y las señas.',
             1;
 
@@ -105,7 +100,7 @@ BEGIN
                 SELECT 1 FROM DBO.DISTRITO
                 WHERE ID_DISTRITO = @ID_DISTRITO
             )
-            THROW 50807, N'El distrito no existe.', 1;
+            THROW 50907, N'El distrito no existe.', 1;
 
         BEGIN TRANSACTION;
 
@@ -130,7 +125,7 @@ BEGIN
         WHERE ID_EMPRESA = @ID_EMPRESA;
 
         IF @@ROWCOUNT = 0
-            THROW 50801, N'La empresa no existe.', 1;
+            THROW 50901, N'La empresa no existe.', 1;
 
         COMMIT TRANSACTION;
     END TRY

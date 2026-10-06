@@ -61,12 +61,9 @@ BEGIN
             THROW 50403, N'Ya existe una empresa con esa cédula.', 1;
 
         IF
-            LEN(@TELEFONO_EMPRESA) <> 11
+            LEN(@TELEFONO_EMPRESA) <> 8
             OR @TELEFONO_EMPRESA LIKE '%[^0-9]%'
-            OR LEFT(@TELEFONO_EMPRESA, 3) <> '506'
-            THROW 50404,
-            N'El teléfono debe tener 11 dígitos y empezar con 506.',
-            1;
+            THROW 50404, N'El teléfono debe tener exactamente 8 dígitos.', 1;
 
         IF
             @CORREO_ELECTRONICO NOT LIKE '_%@_%._%'
