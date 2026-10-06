@@ -104,6 +104,7 @@ BEGIN
             RUBRO CHAR(3) NOT NULL
         );
 
+        -- PREFIJOS EN ASCII: NO DEPENDEN DE LA CODIFICACION DEL ARCHIVO
         INSERT INTO #EMPRESA_RUBRO (ID_EMPRESA, RUBRO)
         SELECT
             E.ID_EMPRESA,
@@ -111,15 +112,11 @@ BEGIN
         FROM DBO.EMPRESA AS E
         INNER JOIN (
             VALUES
-            (N'Moda', 'MOD'), (N'Electro', 'ELE'), (N'Tecno', 'TEC'),
-            (N'Súper', 'SUP'), (N'Ferretería', 'FER'), (N'Clínica', 'CLI'),
-            (N'Instituto', 'INS'), (N'Muebles', 'MUE'),
-            (N'Consultores', 'CON'), (N'Transportes', 'TRA')
+            ('Mo', 'MOD'), ('El', 'ELE'), ('Te', 'TEC'), ('S', 'SUP'),
+            ('Fe', 'FER'), ('Cl', 'CLI'), ('In', 'INS'), ('Mu', 'MUE'),
+            ('Co', 'CON'), ('Tr', 'TRA')
         ) AS R(PREFIJO, CODIGO)
-            ON R.PREFIJO = LEFT(
-                E.NOMBRE_COMERCIAL,
-                CHARINDEX(N' ', E.NOMBRE_COMERCIAL + N' ') - 1
-            );
+            ON LEFT(E.NOMBRE_COMERCIAL, LEN(R.PREFIJO)) = R.PREFIJO;
 
         IF
             EXISTS (
