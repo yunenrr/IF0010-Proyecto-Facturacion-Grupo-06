@@ -94,7 +94,8 @@ BEGIN
             PRECIO_UNITARIO,
             EXISTENCIA,
             TASA_IMPUESTO,
-            ESTADO_PRODUCTO
+            ESTADO_PRODUCTO,
+            FECHA_CREACION
         )
         VALUES (
             @CODIGO_INTERNO,
@@ -102,7 +103,8 @@ BEGIN
             @PRECIO_UNITARIO,
             @EXISTENCIA,
             @TASA_IMPUESTO,
-            1
+            1,
+            SYSDATETIME()
         );
 
         SET @ID_PRODUCTO = SCOPE_IDENTITY();
