@@ -1,6 +1,10 @@
 USE SISTEMA_FACTURACION;
 GO
 
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
+GO
+
 CREATE OR ALTER PROCEDURE DBO.USP_CARGAR_DETALLES (
     @TAMANO_LOTE INT = 25000,
     @CANTIDAD_INSERTADA INT OUTPUT,
@@ -27,12 +31,12 @@ BEGIN
     BEGIN TRY
         IF @TAMANO_LOTE IS NULL OR @TAMANO_LOTE < 1
             BEGIN
-                THROW 50614, N'El tamaño del lote debe ser mayor que 0', 1;
+                THROW 50794, N'El tamaño del lote debe ser mayor que 0', 1;
             END;
 
         IF @ID_MIN IS NULL
             BEGIN
-                THROW 50611,
+                THROW 50791,
                 N'FACTURA esta vacia; ejecuta primero USP_CARGAR_FACTURAS.',
                 1;
             END;
@@ -48,36 +52,100 @@ BEGIN
             END;
 
         CREATE TABLE #PRODUCTO_CARGA (
-            RN INT IDENTITY (1, 1) PRIMARY KEY,
+            RUBRO CHAR(3) NOT NULL,
+            RN INT NOT NULL,
             ID_PRODUCTO INT NOT NULL,
             DESCRIPCION_PRODUCTO NVARCHAR(150) NOT NULL,
             PRECIO_UNITARIO DECIMAL(18, 5) NOT NULL,
-            TASA_IMPUESTO DECIMAL(5, 4) NOT NULL
+            TASA_IMPUESTO DECIMAL(5, 4) NOT NULL,
+            PRIMARY KEY (RUBRO, RN)
         );
 
         INSERT INTO #PRODUCTO_CARGA (
-            ID_PRODUCTO, DESCRIPCION_PRODUCTO, PRECIO_UNITARIO, TASA_IMPUESTO
+            RUBRO, RN, ID_PRODUCTO, DESCRIPCION_PRODUCTO, PRECIO_UNITARIO,
+            TASA_IMPUESTO
         )
         SELECT
-            ID_PRODUCTO,
-            DESCRIPCION_PRODUCTO,
-            PRECIO_UNITARIO,
-            TASA_IMPUESTO
-        FROM DBO.PRODUCTO
-        WHERE ESTADO_PRODUCTO = 1 AND PRECIO_UNITARIO >= 0.01;
+            SUBSTRING(P.CODIGO_INTERNO, 5, 3) AS RUBRO,
+            ROW_NUMBER() OVER (
+                PARTITION BY SUBSTRING(P.CODIGO_INTERNO, 5, 3)
+                ORDER BY P.ID_PRODUCTO
+            ) AS RN,
+            P.ID_PRODUCTO,
+            P.DESCRIPCION_PRODUCTO,
+            P.PRECIO_UNITARIO,
+            P.TASA_IMPUESTO
+        FROM DBO.PRODUCTO AS P
+        WHERE P.ESTADO_PRODUCTO = 1 AND P.PRECIO_UNITARIO >= 0.01;
 
         SET @N_PRODUCTO = (SELECT COUNT(*) FROM #PRODUCTO_CARGA);
 
         IF @N_PRODUCTO = 0
             BEGIN
-                THROW 50613,
+                THROW 50792,
                 N'No hay productos activos con precio >= 0.01.',
+                1;
+            END;
+
+        CREATE TABLE #RUBRO_CANTIDAD (
+            RUBRO CHAR(3) NOT NULL PRIMARY KEY,
+            N INT NOT NULL
+        );
+
+        INSERT INTO #RUBRO_CANTIDAD (RUBRO, N)
+        SELECT
+            RUBRO,
+            COUNT(*) AS N
+        FROM #PRODUCTO_CARGA
+        GROUP BY RUBRO;
+
+        CREATE TABLE #EMPRESA_RUBRO (
+            ID_EMPRESA INT NOT NULL PRIMARY KEY,
+            RUBRO CHAR(3) NOT NULL
+        );
+
+        INSERT INTO #EMPRESA_RUBRO (ID_EMPRESA, RUBRO)
+        SELECT
+            E.ID_EMPRESA,
+            R.CODIGO AS RUBRO
+        FROM DBO.EMPRESA AS E
+        INNER JOIN (
+            VALUES
+            (N'Moda', 'MOD'), (N'Electro', 'ELE'), (N'Tecno', 'TEC'),
+            (N'Súper', 'SUP'), (N'Ferretería', 'FER'), (N'Clínica', 'CLI'),
+            (N'Instituto', 'INS'), (N'Muebles', 'MUE'),
+            (N'Consultores', 'CON'), (N'Transportes', 'TRA')
+        ) AS R(PREFIJO, CODIGO)
+            ON R.PREFIJO = LEFT(
+                E.NOMBRE_COMERCIAL,
+                CHARINDEX(N' ', E.NOMBRE_COMERCIAL + N' ') - 1
+            );
+
+        IF
+            EXISTS (
+                SELECT 1 FROM DBO.EMPRESA AS E
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM #EMPRESA_RUBRO AS ER
+                    WHERE ER.ID_EMPRESA = E.ID_EMPRESA
+                )
+            )
+            OR EXISTS (
+                SELECT 1 FROM #EMPRESA_RUBRO AS ER
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM #RUBRO_CANTIDAD AS RC
+                    WHERE RC.RUBRO = ER.RUBRO
+                )
+            )
+            BEGIN
+                THROW 50793,
+                N'Hay empresas sin rubro o rubros sin productos activos.',
                 1;
             END;
 
         CREATE TABLE #DET_LOTE (
             ID_FACTURA INT NOT NULL,
             NUMERO_LINEA TINYINT NOT NULL,
+            RUBRO CHAR(3) NOT NULL,
             RN_PRODUCTO INT NOT NULL,
             CANTIDAD DECIMAL(9, 3) NOT NULL,
             PCT_DESCUENTO DECIMAL(5, 2) NOT NULL,
@@ -106,6 +174,7 @@ BEGIN
                 INSERT INTO #DET_LOTE (
                     ID_FACTURA,
                     NUMERO_LINEA,
+                    RUBRO,
                     RN_PRODUCTO,
                     CANTIDAD,
                     PCT_DESCUENTO
@@ -113,18 +182,23 @@ BEGIN
                 SELECT
                     F.ID_FACTURA,
                     LN.N AS NUMERO_LINEA,
-                    1 + ABS(CHECKSUM(NEWID())) % @N_PRODUCTO AS RN_PRODUCTO,
-                    1 + ABS(CHECKSUM(NEWID())) % 10 AS CANTIDAD,
+                    ER.RUBRO,
+                    1 + ABS(CHECKSUM(NEWID()) % RC.N) AS RN_PRODUCTO,
+                    1 + ABS(CHECKSUM(NEWID()) % 10) AS CANTIDAD,
                     CASE
-                        WHEN ABS(CHECKSUM(NEWID())) % 100 < 25
-                            THEN 5 + ABS(CHECKSUM(NEWID())) % 11
+                        WHEN ABS(CHECKSUM(NEWID()) % 100) < 25
+                            THEN 5 + ABS(CHECKSUM(NEWID()) % 11)
                         ELSE 0
                     END AS PCT_DESCUENTO
                 FROM DBO.FACTURA AS F
+                INNER JOIN #EMPRESA_RUBRO AS ER
+                    ON F.ID_EMPRESA_EMISORA = ER.ID_EMPRESA
+                INNER JOIN #RUBRO_CANTIDAD AS RC
+                    ON ER.RUBRO = RC.RUBRO
                 CROSS JOIN (VALUES (1), (2), (3), (4), (5)) AS LN(N)
                 WHERE
                     F.ID_FACTURA BETWEEN @DESDE AND @HASTA
-                    AND LN.N <= 3 + ABS(CHECKSUM(F.ID_FACTURA)) % 3;
+                    AND LN.N <= 3 + ABS(CHECKSUM(F.ID_FACTURA) % 3);
 
                 UPDATE D
                 SET
@@ -134,7 +208,8 @@ BEGIN
                     D.TASA_IMPUESTO = P.TASA_IMPUESTO,
                     D.SUBTOTAL = ROUND(D.CANTIDAD * P.PRECIO_UNITARIO, 2)
                 FROM #DET_LOTE AS D
-                INNER JOIN #PRODUCTO_CARGA AS P ON D.RN_PRODUCTO = P.RN;
+                INNER JOIN #PRODUCTO_CARGA AS P
+                    ON D.RUBRO = P.RUBRO AND D.RN_PRODUCTO = P.RN;
 
                 UPDATE #DET_LOTE
                 SET DESCUENTO = ROUND(SUBTOTAL * PCT_DESCUENTO / 100, 2);
@@ -143,6 +218,27 @@ BEGIN
                 SET IMPUESTO = ROUND(
                     (SUBTOTAL - DESCUENTO) * TASA_IMPUESTO, 2
                 );
+
+                IF
+                    EXISTS (
+                        SELECT 1 FROM #DET_LOTE
+                        WHERE
+                            ID_PRODUCTO IS NULL
+                            OR CANTIDAD <= 0
+                            OR PRECIO_UNITARIO <= 0
+                            OR SUBTOTAL <= 0
+                            OR DESCUENTO < 0
+                            OR DESCUENTO >= SUBTOTAL
+                            OR IMPUESTO < 0
+                            OR TASA_IMPUESTO NOT IN (
+                                0.0000, 0.0100, 0.0200, 0.0400, 0.1300
+                            )
+                    )
+                    BEGIN
+                        THROW 50795,
+                        N'Una línea generada incumple las reglas del detalle.',
+                        1;
+                    END;
 
                 INSERT INTO DBO.DETALLE_FACTURA (
                     ID_FACTURA,
@@ -233,6 +329,10 @@ EXEC DBO.USP_CARGAR_DETALLES
     @CANTIDAD_INSERTADA = @CANTIDAD OUTPUT,
     @CODIGO_ERROR = @ERROR OUTPUT,
     @MENSAJE = @MSG OUTPUT;
+
+-- SI EL SP FALLÓ, EL SCRIPT TAMBIÉN DEBE FALLAR
+IF @ERROR <> 0
+    THROW 50700, @MSG, 1;
 
 SELECT
     @CANTIDAD AS LINEAS_INSERTADAS,
