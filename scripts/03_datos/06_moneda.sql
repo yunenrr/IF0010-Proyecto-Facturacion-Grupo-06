@@ -45,7 +45,7 @@ BEGIN
                 WHERE M.CODIGO_MONEDA <> B.CODIGO_MONEDA
             )
             BEGIN
-                THROW 50701,
+                THROW 50771,
                 N'El ID 1, 2 o 3 ya pertenece a otra moneda',
                 1;
             END;
@@ -98,6 +98,10 @@ EXEC DBO.USP_REGISTRAR_MONEDAS_BASE
     @CANTIDAD_INSERTADA = @CANTIDAD OUTPUT,
     @CODIGO_ERROR = @ERROR OUTPUT,
     @MENSAJE = @MSG OUTPUT;
+
+-- SI EL SP FALLÓ, EL SCRIPT TAMBIÉN DEBE FALLAR
+IF @ERROR <> 0
+    THROW 50700, @MSG, 1;
 
 SELECT
     @CANTIDAD AS CANTIDAD_INSERTADA,

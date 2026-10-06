@@ -1,6 +1,10 @@
 USE SISTEMA_FACTURACION;
 GO
 
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
+GO
+
 CREATE OR ALTER PROCEDURE DBO.USP_CARGAR_FACTURAS (
     @TOTAL_FACTURAS INT = 500000,
     @TAMANO_LOTE INT = 25000,
@@ -59,33 +63,32 @@ BEGIN
             OR @TOTAL_FACTURAS < 1
             OR @TOTAL_FACTURAS > 31536000
             BEGIN
-                THROW 50605,
+                THROW 50781,
                 N'El total de facturas debe estar entre 1 y 31536000',
                 1;
             END;
 
         IF @TAMANO_LOTE IS NULL OR @TAMANO_LOTE < 1
             BEGIN
-                THROW 50606, N'El tamaño del lote debe ser mayor que 0', 1;
+                THROW 50782, N'El tamaño del lote debe ser mayor que 0', 1;
             END;
 
         IF EXISTS (SELECT 1 FROM DBO.FACTURA)
             BEGIN
-                THROW 50601,
-                N'FACTURA ya tiene datos; la carga se detiene.',
-                1;
+                SET @MENSAJE = N'FACTURA ya tiene datos. No se cargó nada.';
+                RETURN;
             END;
 
         IF
             @ID_BORRADOR IS NULL OR @ID_EMITIDA IS NULL
             OR @ID_PAGADA IS NULL OR @ID_CANCELADA IS NULL
             BEGIN
-                THROW 50602, N'Faltan estados en ESTADO_FACTURA.', 1;
+                THROW 50783, N'Faltan estados en ESTADO_FACTURA.', 1;
             END;
 
         IF @ID_FAC IS NULL OR @ID_TIQ IS NULL
             BEGIN
-                THROW 50603,
+                THROW 50784,
                 N'Faltan tipos FAC o TIQ en TIPO_DOCUMENTO.',
                 1;
             END;
@@ -106,13 +109,17 @@ BEGIN
         );
 
         INSERT INTO #EMPRESA_CARGA (ID_EMPRESA)
-        SELECT ID_EMPRESA FROM DBO.EMPRESA;
+        SELECT ID_EMPRESA
+        FROM DBO.EMPRESA
+        WHERE ESTA_ACTIVA = 1;
 
         INSERT INTO #CLIENTE_CARGA (ID_CLIENTE)
         SELECT ID_CLIENTE FROM DBO.CLIENTE;
 
         INSERT INTO #MONEDA_CARGA (ID_MONEDA)
-        SELECT ID_MONEDA FROM DBO.MONEDA;
+        SELECT ID_MONEDA
+        FROM DBO.MONEDA
+        WHERE CODIGO_MONEDA = 'CRC';
 
         SET @N_EMPRESA = (SELECT COUNT(*) FROM #EMPRESA_CARGA);
         SET @N_CLIENTE = (SELECT COUNT(*) FROM #CLIENTE_CARGA);
@@ -120,7 +127,7 @@ BEGIN
 
         IF @N_EMPRESA = 0 OR @N_CLIENTE = 0 OR @N_MONEDA = 0
             BEGIN
-                THROW 50604,
+                THROW 50785,
                 N'EMPRESA, CLIENTE o MONEDA estan vacios.',
                 1;
             END;
@@ -153,15 +160,15 @@ BEGIN
                     FECHA, MINUTOS_ANTES
                 )
                 SELECT
-                    T.N AS N,
-                    ABS(CHECKSUM(NEWID())) % 100 AS R_TIPO,
-                    ABS(CHECKSUM(NEWID())) % 100 AS R_ESTADO,
-                    1 + ABS(CHECKSUM(NEWID())) % @N_EMPRESA AS RN_EMPRESA,
-                    1 + ABS(CHECKSUM(NEWID())) % @N_CLIENTE AS RN_CLIENTE,
-                    1 + ABS(CHECKSUM(NEWID())) % @N_MONEDA AS RN_MONEDA,
+                    T.N,
+                    ABS(CHECKSUM(NEWID()) % 100) AS R_TIPO,
+                    ABS(CHECKSUM(NEWID()) % 100) AS R_ESTADO,
+                    1 + ABS(CHECKSUM(NEWID()) % @N_EMPRESA) AS RN_EMPRESA,
+                    1 + ABS(CHECKSUM(NEWID()) % @N_CLIENTE) AS RN_CLIENTE,
+                    1 + ABS(CHECKSUM(NEWID()) % @N_MONEDA) AS RN_MONEDA,
                     DATEADD(SECOND, T.N * @PASO_SEGUNDOS, @FECHA_BASE)
                         AS FECHA,
-                    1 + ABS(CHECKSUM(NEWID())) % 120 AS MINUTOS_ANTES
+                    1 + ABS(CHECKSUM(NEWID()) % 120) AS MINUTOS_ANTES
                 FROM (
                     SELECT TOP (@HASTA - @DESDE + 1)
                         @DESDE - 1
@@ -191,9 +198,16 @@ BEGIN
                     EM.ID_EMPRESA AS ID_EMPRESA_EMISORA,
                     CL.ID_CLIENTE AS ID_CLIENTE_COMPRADOR,
                     X.ID_ESTADO AS ID_ESTADO_FACTURA,
-                    MO.ID_MONEDA AS ID_MONEDA,
+                    MO.ID_MONEDA,
                     CASE
-                        WHEN X.ID_ESTADO = @ID_BORRADOR THEN NULL
+                        WHEN X.ID_ESTADO = @ID_BORRADOR
+                            THEN CONCAT(
+                                'BOR-',
+                                LEFT(
+                                    REPLACE(CAST(NEWID() AS CHAR(36)), '-', ''),
+                                    16
+                                )
+                            )
                         ELSE
                             CONVERT(CHAR(8), X.FECHA, 112)
                             + REPLACE(CONVERT(CHAR(8), X.FECHA, 108), ':', '')
@@ -205,23 +219,20 @@ BEGIN
                         ELSE DATEADD(MINUTE, -X.MINUTOS_ANTES, X.FECHA)
                     END AS FECHA_CREACION,
                     X.FECHA AS FECHA_MODIFICACION,
-                    CASE
-                        WHEN X.ID_ESTADO = @ID_BORRADOR THEN NULL
-                        ELSE X.FECHA
-                    END AS FECHA_EMISION,
+                    X.FECHA AS FECHA_EMISION, -- EN BORRADOR ES PROVISIONAL
                     0.01 AS SUBTOTAL_FACTURA,
                     0 AS TOTAL_DESCUENTOS,
                     0 AS TOTAL_IMPUESTOS,
                     0 AS MONTO_FINAL,
-                    NULL AS OBSERVACIONES
+                    N'' AS OBSERVACIONES
                 FROM (
                     SELECT
-                        L.N AS N,
-                        L.RN_EMPRESA AS RN_EMPRESA,
-                        L.RN_CLIENTE AS RN_CLIENTE,
-                        L.RN_MONEDA AS RN_MONEDA,
-                        L.FECHA AS FECHA,
-                        L.MINUTOS_ANTES AS MINUTOS_ANTES,
+                        L.N,
+                        L.RN_EMPRESA,
+                        L.RN_CLIENTE,
+                        L.RN_MONEDA,
+                        L.FECHA,
+                        L.MINUTOS_ANTES,
                         CASE
                             WHEN L.R_TIPO < 70 THEN @ID_FAC
                             ELSE @ID_TIQ
@@ -267,7 +278,6 @@ BEGIN
 END;
 GO
 
-
 DECLARE @CANTIDAD INT;
 DECLARE @ERROR INT;
 DECLARE @MSG NVARCHAR(4000);
@@ -278,6 +288,10 @@ EXEC DBO.USP_CARGAR_FACTURAS
     @CANTIDAD_INSERTADA = @CANTIDAD OUTPUT,
     @CODIGO_ERROR = @ERROR OUTPUT,
     @MENSAJE = @MSG OUTPUT;
+
+-- SI EL SP FALLÓ, EL SCRIPT TAMBIÉN DEBE FALLAR
+IF @ERROR <> 0
+    THROW 50700, @MSG, 1;
 
 SELECT
     @CANTIDAD AS CANTIDAD_INSERTADA,
@@ -295,15 +309,14 @@ SELECT
     CONSECUTIVO,
     COUNT(*) AS VECES
 FROM DBO.FACTURA
-WHERE CONSECUTIVO IS NOT NULL
 GROUP BY CONSECUTIVO
 HAVING COUNT(*) > 1;
 
 SELECT
     E.ESTADO,
-    COUNT(*) AS CANTIDAD,
     CAST(100.0 * COUNT(*) / SUM(COUNT(*)) OVER () AS DECIMAL(5, 2))
-        AS PORCENTAJE
+        AS PORCENTAJE,
+    COUNT(*) AS CANTIDAD
 FROM DBO.FACTURA AS F
 INNER JOIN DBO.ESTADO_FACTURA AS E
     ON F.ID_ESTADO_FACTURA = E.ID_ESTADO_FACTURA
