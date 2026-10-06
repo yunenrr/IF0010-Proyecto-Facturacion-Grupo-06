@@ -33,7 +33,7 @@ BEGIN
             VALUES
             (1, 'FAC', N'Factura electrónica'),
             (2, 'TIQ', N'Tiquete electrónico')
-        ) AS V (ID_TIPO_DOCUMENTO, CODIGO_IDENTIFICADOR, DESCRIPCION)
+        ) AS V(ID_TIPO_DOCUMENTO, CODIGO_IDENTIFICADOR, DESCRIPCION)
         WHERE NOT EXISTS (
             SELECT 1
             FROM DBO.TIPO_DOCUMENTO AS T

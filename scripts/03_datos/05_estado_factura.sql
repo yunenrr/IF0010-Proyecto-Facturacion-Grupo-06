@@ -34,7 +34,7 @@ BEGIN
             (2, 'EMITIDA', N'Comprobante emitido, pendiente de pago'),
             (3, 'PAGADA', N'Comprobante emitido y pagado en su totalidad'),
             (4, 'CANCELADA', N'Comprobante anulado, sin efecto fiscal')
-        ) AS V (ID_ESTADO_FACTURA, ESTADO, DESCRIPCION_ESTADO)
+        ) AS V(ID_ESTADO_FACTURA, ESTADO, DESCRIPCION_ESTADO)
         WHERE NOT EXISTS (
             SELECT 1
             FROM DBO.ESTADO_FACTURA AS E
