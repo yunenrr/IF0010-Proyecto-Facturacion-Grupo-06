@@ -119,7 +119,6 @@ BEGIN
             )
             THROW 50106, N'Un producto no existe o está inactivo.', 1;
 
-        -- Rubro de la empresa y de los productos: ambos vienen de la FK ID_RUBRO
         SELECT @ID_RUBRO_EMPRESA = ID_RUBRO
         FROM DBO.EMPRESA
         WHERE ID_EMPRESA = @ID_EMPRESA;
