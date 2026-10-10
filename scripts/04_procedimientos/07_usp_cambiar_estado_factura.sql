@@ -84,13 +84,17 @@ BEGIN
                 FROM DBO.DETALLE_FACTURA AS DF
                 INNER JOIN DBO.PRODUCTO AS P
                     ON DF.ID_PRODUCTO = P.ID_PRODUCTO
+                INNER JOIN DBO.TIPO_PRODUCTO AS TP
+                    ON P.ID_TIPO_PRODUCTO = TP.ID_TIPO_PRODUCTO
                 WHERE
                     DF.ID_FACTURA = @ID_FACTURA
-                    AND P.CODIGO_INTERNO LIKE 'PRD%';
+                    AND TP.CODIGO_TIPO = 'PRD';
 
                 UPDATE P
                 SET P.EXISTENCIA = P.EXISTENCIA - SUM_DF.CANTIDAD_TOTAL
                 FROM DBO.PRODUCTO AS P
+                INNER JOIN DBO.TIPO_PRODUCTO AS TP
+                    ON P.ID_TIPO_PRODUCTO = TP.ID_TIPO_PRODUCTO
                 INNER JOIN (
                     SELECT
                         DF.ID_PRODUCTO,
@@ -101,7 +105,7 @@ BEGIN
                 ) AS SUM_DF
                     ON P.ID_PRODUCTO = SUM_DF.ID_PRODUCTO
                 WHERE
-                    P.CODIGO_INTERNO LIKE 'PRD%'
+                    TP.CODIGO_TIPO = 'PRD'
                     AND P.EXISTENCIA >= SUM_DF.CANTIDAD_TOTAL;
 
                 IF @@ROWCOUNT < @BIENES_DISTINTOS
@@ -117,6 +121,8 @@ BEGIN
                 UPDATE P
                 SET P.EXISTENCIA = P.EXISTENCIA + SUM_DF.CANTIDAD_TOTAL
                 FROM DBO.PRODUCTO AS P
+                INNER JOIN DBO.TIPO_PRODUCTO AS TP
+                    ON P.ID_TIPO_PRODUCTO = TP.ID_TIPO_PRODUCTO
                 INNER JOIN (
                     SELECT
                         DF.ID_PRODUCTO,
@@ -126,7 +132,7 @@ BEGIN
                     GROUP BY DF.ID_PRODUCTO
                 ) AS SUM_DF
                     ON P.ID_PRODUCTO = SUM_DF.ID_PRODUCTO
-                WHERE P.CODIGO_INTERNO LIKE 'PRD%';
+                WHERE TP.CODIGO_TIPO = 'PRD';
             END;
 
         UPDATE F
