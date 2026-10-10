@@ -52,27 +52,24 @@ BEGIN
             END;
 
         CREATE TABLE #PRODUCTO_CARGA (
-            RUBRO CHAR(3) NOT NULL,
+            ID_RUBRO TINYINT NOT NULL,
             RN INT NOT NULL,
             ID_PRODUCTO INT NOT NULL,
-            DESCRIPCION_PRODUCTO NVARCHAR(150) NOT NULL,
             PRECIO_UNITARIO DECIMAL(18, 5) NOT NULL,
             TASA_IMPUESTO DECIMAL(5, 4) NOT NULL,
-            PRIMARY KEY (RUBRO, RN)
+            PRIMARY KEY (ID_RUBRO, RN)
         );
 
         INSERT INTO #PRODUCTO_CARGA (
-            RUBRO, RN, ID_PRODUCTO, DESCRIPCION_PRODUCTO, PRECIO_UNITARIO,
-            TASA_IMPUESTO
+            ID_RUBRO, RN, ID_PRODUCTO, PRECIO_UNITARIO, TASA_IMPUESTO
         )
         SELECT
-            SUBSTRING(P.CODIGO_INTERNO, 5, 3) AS RUBRO,
+            P.ID_RUBRO,
             ROW_NUMBER() OVER (
-                PARTITION BY SUBSTRING(P.CODIGO_INTERNO, 5, 3)
+                PARTITION BY P.ID_RUBRO
                 ORDER BY P.ID_PRODUCTO
             ) AS RN,
             P.ID_PRODUCTO,
-            P.DESCRIPCION_PRODUCTO,
             P.PRECIO_UNITARIO,
             P.TASA_IMPUESTO
         FROM DBO.PRODUCTO AS P
@@ -88,66 +85,51 @@ BEGIN
             END;
 
         CREATE TABLE #RUBRO_CANTIDAD (
-            RUBRO CHAR(3) NOT NULL PRIMARY KEY,
+            ID_RUBRO TINYINT NOT NULL PRIMARY KEY,
             N INT NOT NULL
         );
 
-        INSERT INTO #RUBRO_CANTIDAD (RUBRO, N)
+        INSERT INTO #RUBRO_CANTIDAD (ID_RUBRO, N)
         SELECT
-            RUBRO,
+            ID_RUBRO,
             COUNT(*) AS N
         FROM #PRODUCTO_CARGA
-        GROUP BY RUBRO;
+        GROUP BY ID_RUBRO;
 
         CREATE TABLE #EMPRESA_RUBRO (
             ID_EMPRESA INT NOT NULL PRIMARY KEY,
-            RUBRO CHAR(3) NOT NULL
+            ID_RUBRO TINYINT NOT NULL
         );
 
-        -- PREFIJOS EN ASCII: NO DEPENDEN DE LA CODIFICACION DEL ARCHIVO
-        INSERT INTO #EMPRESA_RUBRO (ID_EMPRESA, RUBRO)
+        -- EL RUBRO VIENE DE LA FK EMPRESA.ID_RUBRO, NO DEL NOMBRE COMERCIAL
+        INSERT INTO #EMPRESA_RUBRO (ID_EMPRESA, ID_RUBRO)
         SELECT
-            E.ID_EMPRESA,
-            R.CODIGO AS RUBRO
-        FROM DBO.EMPRESA AS E
-        INNER JOIN (
-            VALUES
-            ('Mo', 'MOD'), ('El', 'ELE'), ('Te', 'TEC'), ('S', 'SUP'),
-            ('Fe', 'FER'), ('Cl', 'CLI'), ('In', 'INS'), ('Mu', 'MUE'),
-            ('Co', 'CON'), ('Tr', 'TRA')
-        ) AS R(PREFIJO, CODIGO)
-            ON LEFT(E.NOMBRE_COMERCIAL, LEN(R.PREFIJO)) = R.PREFIJO;
+            ID_EMPRESA,
+            ID_RUBRO
+        FROM DBO.EMPRESA;
 
         IF
             EXISTS (
-                SELECT 1 FROM DBO.EMPRESA AS E
-                WHERE NOT EXISTS (
-                    SELECT 1 FROM #EMPRESA_RUBRO AS ER
-                    WHERE ER.ID_EMPRESA = E.ID_EMPRESA
-                )
-            )
-            OR EXISTS (
                 SELECT 1 FROM #EMPRESA_RUBRO AS ER
                 WHERE NOT EXISTS (
                     SELECT 1 FROM #RUBRO_CANTIDAD AS RC
-                    WHERE RC.RUBRO = ER.RUBRO
+                    WHERE RC.ID_RUBRO = ER.ID_RUBRO
                 )
             )
             BEGIN
                 THROW 50793,
-                N'Hay empresas sin rubro o rubros sin productos activos.',
+                N'Hay rubros de empresa sin productos activos.',
                 1;
             END;
 
         CREATE TABLE #DET_LOTE (
             ID_FACTURA INT NOT NULL,
             NUMERO_LINEA TINYINT NOT NULL,
-            RUBRO CHAR(3) NOT NULL,
+            ID_RUBRO TINYINT NOT NULL,
             RN_PRODUCTO INT NOT NULL,
             CANTIDAD DECIMAL(9, 3) NOT NULL,
             PCT_DESCUENTO DECIMAL(5, 2) NOT NULL,
             ID_PRODUCTO INT NULL,
-            DESCRIPCION_LINEA NVARCHAR(150) NULL,
             PRECIO_UNITARIO DECIMAL(18, 5) NULL,
             TASA_IMPUESTO DECIMAL(5, 4) NULL,
             SUBTOTAL DECIMAL(18, 2) NULL,
@@ -171,7 +153,7 @@ BEGIN
                 INSERT INTO #DET_LOTE (
                     ID_FACTURA,
                     NUMERO_LINEA,
-                    RUBRO,
+                    ID_RUBRO,
                     RN_PRODUCTO,
                     CANTIDAD,
                     PCT_DESCUENTO
@@ -179,7 +161,7 @@ BEGIN
                 SELECT
                     F.ID_FACTURA,
                     LN.N AS NUMERO_LINEA,
-                    ER.RUBRO,
+                    ER.ID_RUBRO,
                     1 + ABS(CHECKSUM(NEWID()) % RC.N) AS RN_PRODUCTO,
                     1 + ABS(CHECKSUM(NEWID()) % 10) AS CANTIDAD,
                     CASE
@@ -191,7 +173,7 @@ BEGIN
                 INNER JOIN #EMPRESA_RUBRO AS ER
                     ON F.ID_EMPRESA_EMISORA = ER.ID_EMPRESA
                 INNER JOIN #RUBRO_CANTIDAD AS RC
-                    ON ER.RUBRO = RC.RUBRO
+                    ON ER.ID_RUBRO = RC.ID_RUBRO
                 CROSS JOIN (VALUES (1), (2), (3), (4), (5)) AS LN(N)
                 WHERE
                     F.ID_FACTURA BETWEEN @DESDE AND @HASTA
@@ -200,13 +182,12 @@ BEGIN
                 UPDATE D
                 SET
                     D.ID_PRODUCTO = P.ID_PRODUCTO,
-                    D.DESCRIPCION_LINEA = P.DESCRIPCION_PRODUCTO,
                     D.PRECIO_UNITARIO = P.PRECIO_UNITARIO,
                     D.TASA_IMPUESTO = P.TASA_IMPUESTO,
                     D.SUBTOTAL = ROUND(D.CANTIDAD * P.PRECIO_UNITARIO, 2)
                 FROM #DET_LOTE AS D
                 INNER JOIN #PRODUCTO_CARGA AS P
-                    ON D.RUBRO = P.RUBRO AND D.RN_PRODUCTO = P.RN;
+                    ON D.ID_RUBRO = P.ID_RUBRO AND D.RN_PRODUCTO = P.RN;
 
                 UPDATE #DET_LOTE
                 SET DESCUENTO = ROUND(SUBTOTAL * PCT_DESCUENTO / 100, 2);
@@ -241,7 +222,6 @@ BEGIN
                     ID_FACTURA,
                     ID_PRODUCTO,
                     NUMERO_LINEA,
-                    DESCRIPCION_LINEA,
                     CANTIDAD_FACTURADA,
                     PRECIO_UNITARIO,
                     TASA_IMPUESTO,
@@ -254,7 +234,6 @@ BEGIN
                     D.ID_FACTURA,
                     D.ID_PRODUCTO,
                     D.NUMERO_LINEA,
-                    D.DESCRIPCION_LINEA,
                     D.CANTIDAD AS CANTIDAD_FACTURADA,
                     D.PRECIO_UNITARIO,
                     D.TASA_IMPUESTO,
