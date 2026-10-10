@@ -52,7 +52,12 @@ BEGIN
         (16, N'Esteban'),
         (17, N'Fernanda'),
         (18, N'Ricardo'),
-        (19, N'Gabriela');
+        (19, N'Gabriela'),
+        (20, N'Alejandro'), (21, N'Natalia'), (22, N'Fabián'), (23, N'Mariana'),
+        (24, N'Sebastián'), (25, N'Camila'), (26, N'Gustavo'), (27, N'Andrea'),
+        (28, N'Roberto'), (29, N'Melissa'), (30, N'Adrián'), (31, N'Karla'),
+        (32, N'Pablo'), (33, N'Tatiana'), (34, N'Kevin'), (35, N'Silvia'),
+        (36, N'Óscar'), (37, N'Verónica'), (38, N'Manuel'), (39, N'Adriana');
 
         INSERT INTO @Apellidos (ID, APELLIDO)
         VALUES
@@ -62,7 +67,11 @@ BEGIN
         (12, N'Calderón'), (13, N'Ramírez'), (14, N'Quesada'), (15, N'Salazar'),
         (16, N'Alvarado'), (17, N'Bonilla'), (18, N'Cordero'), (19, N'Segura'),
         (20, N'Zúñiga'), (21, N'Núñez'), (22, N'Villalobos'), (23, N'Méndez'),
-        (24, N'Brenes');
+        (24, N'Brenes'),
+        (25, N'Sánchez'), (26, N'Pérez'), (27, N'Campos'), (28, N'Arias'),
+        (29, N'Herrera'), (30, N'Ulate'), (31, N'Porras'), (32, N'Montero'),
+        (33, N'Madrigal'), (34, N'Badilla'), (35, N'Vega'), (36, N'Sibaja'),
+        (37, N'Carvajal'), (38, N'Acuña'), (39, N'Murillo');
 
         BEGIN TRANSACTION;
 
@@ -122,9 +131,9 @@ BEGIN
             DATEADD(DAY, -NUM.DIAS_REG, @AHORA) AS FECHA_REGISTRO,
             DATEADD(DAY, -NUM.DIAS_ACT, @AHORA) AS FECHA_ACTUALIZACION
         FROM Y AS NUM
-        INNER JOIN @Nombres AS NB ON NB.ID = NUM.N % 20
-        INNER JOIN @Apellidos AS A1 ON A1.ID = (NUM.N / 20) % 25
-        INNER JOIN @Apellidos AS A2 ON A2.ID = (NUM.N / 500) % 25
+        INNER JOIN @Nombres AS NB ON NB.ID = NUM.N % 40
+        INNER JOIN @Apellidos AS A1 ON A1.ID = (NUM.N / 40) % 40
+        INNER JOIN @Apellidos AS A2 ON A2.ID = (NUM.N / 1600) % 40
         INNER JOIN DIR AS D ON D.RN = NUM.N + 100;
 
         SET @FILAS_INSERTADAS = @@ROWCOUNT;
