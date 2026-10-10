@@ -7,6 +7,7 @@ GO
 CREATE OR ALTER PROCEDURE DBO.USP_REGISTRAR_EMPRESA
     @NOMBRE_COMERCIAL NVARCHAR(150),
     @RAZON_SOCIAL NVARCHAR(150),
+    @ID_RUBRO TINYINT,
     @CEDULA_EMPRESA VARCHAR(12),
     @TELEFONO_EMPRESA VARCHAR(12),
     @CORREO_ELECTRONICO VARCHAR(254),
@@ -21,7 +22,6 @@ BEGIN
     SET XACT_ABORT ON;
 
     DECLARE @ID_DIRECCION INT;
-    DECLARE @PREFIJO NVARCHAR(150);
 
     SET @ID_EMPRESA = NULL;
     SET @CODIGO_ERROR = 0;
@@ -38,6 +38,7 @@ BEGIN
         IF
             @NOMBRE_COMERCIAL IS NULL
             OR @RAZON_SOCIAL IS NULL
+            OR @ID_RUBRO IS NULL
             OR @CEDULA_EMPRESA IS NULL
             OR @TELEFONO_EMPRESA IS NULL
             OR @CORREO_ELECTRONICO IS NULL
@@ -71,20 +72,12 @@ BEGIN
             OR @CORREO_ELECTRONICO LIKE '% %'
             THROW 50405, N'El correo no tiene un formato válido.', 1;
 
-        SET @PREFIJO = LEFT(
-            @NOMBRE_COMERCIAL,
-            CHARINDEX(N' ', @NOMBRE_COMERCIAL + N' ') - 1
-        );
-
         IF
-            @PREFIJO NOT IN (
-                N'Moda', N'Electro', N'Tecno', N'Súper', N'Ferretería',
-                N'Clínica', N'Instituto', N'Muebles', N'Consultores',
-                N'Transportes'
+            NOT EXISTS (
+                SELECT 1 FROM DBO.RUBRO
+                WHERE ID_RUBRO = @ID_RUBRO
             )
-            THROW 50406,
-            N'El nombre comercial no empieza con un prefijo de rubro válido.',
-            1;
+            THROW 50406, N'El rubro no existe.', 1;
 
         IF
             NOT EXISTS (
@@ -105,6 +98,7 @@ BEGIN
             RAZON_SOCIAL,
             CEDULA_EMPRESA,
             ID_DIRECCION,
+            ID_RUBRO,
             TELEFONO_EMPRESA,
             CORREO_ELECTRONICO,
             FECHA_CREACION,
@@ -115,6 +109,7 @@ BEGIN
             @RAZON_SOCIAL,
             @CEDULA_EMPRESA,
             @ID_DIRECCION,
+            @ID_RUBRO,
             @TELEFONO_EMPRESA,
             @CORREO_ELECTRONICO,
             SYSDATETIME(),

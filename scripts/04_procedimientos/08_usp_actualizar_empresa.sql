@@ -22,8 +22,6 @@ BEGIN
     SET XACT_ABORT ON;
 
     DECLARE @NOMBRE_ACTUAL NVARCHAR(150);
-    DECLARE @PREFIJO_ACTUAL NVARCHAR(150);
-    DECLARE @PREFIJO_NUEVO NVARCHAR(150);
     DECLARE @ID_DIRECCION_NUEVA INT = NULL;
 
     SET @CODIGO_ERROR = 0;
@@ -69,23 +67,6 @@ BEGIN
                 OR @CORREO_ELECTRONICO LIKE '% %'
             )
             THROW 50904, N'El correo no tiene un formato válido.', 1;
-
-        IF @NOMBRE_COMERCIAL IS NOT NULL
-            BEGIN
-                SET @PREFIJO_ACTUAL = LEFT(
-                    @NOMBRE_ACTUAL,
-                    CHARINDEX(N' ', @NOMBRE_ACTUAL + N' ') - 1
-                );
-                SET @PREFIJO_NUEVO = LEFT(
-                    @NOMBRE_COMERCIAL,
-                    CHARINDEX(N' ', @NOMBRE_COMERCIAL + N' ') - 1
-                );
-
-                IF @PREFIJO_NUEVO <> @PREFIJO_ACTUAL
-                    THROW 50905,
-                    N'El nombre comercial debe conservar el prefijo de rubro.',
-                    1;
-            END;
 
         IF
             (@ID_DISTRITO IS NULL AND @OTRAS_SENAS IS NOT NULL)
