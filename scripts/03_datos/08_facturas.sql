@@ -190,8 +190,7 @@ BEGIN
                     SUBTOTAL_FACTURA,
                     TOTAL_DESCUENTOS,
                     TOTAL_IMPUESTOS,
-                    MONTO_FINAL,
-                    OBSERVACIONES
+                    MONTO_FINAL
                 )
                 SELECT
                     X.ID_TIPO AS ID_TIPO_DOCUMENTO,
@@ -223,8 +222,7 @@ BEGIN
                     0.01 AS SUBTOTAL_FACTURA,
                     0 AS TOTAL_DESCUENTOS,
                     0 AS TOTAL_IMPUESTOS,
-                    0 AS MONTO_FINAL,
-                    N'' AS OBSERVACIONES
+                    0 AS MONTO_FINAL
                 FROM (
                     SELECT
                         L.N,
