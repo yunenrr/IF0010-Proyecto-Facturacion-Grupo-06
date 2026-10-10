@@ -2,8 +2,8 @@ USE SISTEMA_FACTURACION;
 GO
 
 CREATE OR ALTER PROCEDURE DBO.USP_REGISTRAR_PRODUCTO (
-    @TIPO CHAR(3),
-    @CODIGO_RUBRO CHAR(3),
+    @ID_TIPO_PRODUCTO TINYINT,
+    @ID_RUBRO TINYINT,
     @DESCRIPCION NVARCHAR(150),
     @PRECIO_UNITARIO DECIMAL(18, 5),
     @TASA_IMPUESTO DECIMAL(5, 4),
@@ -25,21 +25,27 @@ BEGIN
 
     DECLARE @MAX_NUM INT = 0;
     DECLARE @PREFIJO VARCHAR(8);
+    DECLARE @CODIGO_TIPO CHAR(3);
+    DECLARE @CODIGO_RUBRO CHAR(3);
 
     BEGIN TRY
-        IF @TIPO IS NULL OR @TIPO NOT IN ('PRD', 'SRV')
+        -- EL TIPO Y EL RUBRO SE VALIDAN CONTRA SUS CATÁLOGOS
+        SELECT @CODIGO_TIPO = CODIGO_TIPO
+        FROM DBO.TIPO_PRODUCTO
+        WHERE ID_TIPO_PRODUCTO = @ID_TIPO_PRODUCTO;
+
+        IF @CODIGO_TIPO IS NULL
             BEGIN
-                THROW 50501, N'Tipo inválido (no es PRD ni SRV)', 1;
+                THROW 50501, N'El tipo de producto no existe', 1;
             END;
 
-        IF
-            @CODIGO_RUBRO IS NULL
-            OR @CODIGO_RUBRO NOT IN (
-                'MOD', 'ELE', 'TEC', 'SUP', 'FER',
-                'CLI', 'INS', 'MUE', 'CON', 'TRA'
-            )
+        SELECT @CODIGO_RUBRO = CODIGO_RUBRO
+        FROM DBO.RUBRO
+        WHERE ID_RUBRO = @ID_RUBRO;
+
+        IF @CODIGO_RUBRO IS NULL
             BEGIN
-                THROW 50502, N'Rubro inválido', 1;
+                THROW 50502, N'El rubro no existe', 1;
             END;
 
         IF LTRIM(RTRIM(ISNULL(@DESCRIPCION, ''))) = ''
@@ -62,20 +68,22 @@ BEGIN
         IF
             @EXISTENCIA IS NULL
             OR @EXISTENCIA < 0
-            OR (@TIPO = 'SRV' AND @EXISTENCIA <> 0)
+            OR (@CODIGO_TIPO = 'SRV' AND @EXISTENCIA <> 0)
             BEGIN
                 THROW 50506,
                 N'Existencia negativa, o distinta de 0 en un servicio',
                 1;
             END;
 
-        SET @PREFIJO = @TIPO + '-' + @CODIGO_RUBRO + '-';
+        SET @PREFIJO = @CODIGO_TIPO + '-' + @CODIGO_RUBRO + '-';
 
         BEGIN TRANSACTION;
 
         SELECT @MAX_NUM = ISNULL(MAX(CAST(RIGHT(CODIGO_INTERNO, 5) AS INT)), 0)
         FROM DBO.PRODUCTO WITH (UPDLOCK, HOLDLOCK)
-        WHERE CODIGO_INTERNO LIKE @PREFIJO + '%';
+        WHERE
+            ID_RUBRO = @ID_RUBRO
+            AND ID_TIPO_PRODUCTO = @ID_TIPO_PRODUCTO;
 
         SET @MAX_NUM = @MAX_NUM + 1;
 
@@ -90,6 +98,8 @@ BEGIN
 
         INSERT INTO DBO.PRODUCTO (
             CODIGO_INTERNO,
+            ID_TIPO_PRODUCTO,
+            ID_RUBRO,
             DESCRIPCION_PRODUCTO,
             PRECIO_UNITARIO,
             EXISTENCIA,
@@ -99,6 +109,8 @@ BEGIN
         )
         VALUES (
             @CODIGO_INTERNO,
+            @ID_TIPO_PRODUCTO,
+            @ID_RUBRO,
             @DESCRIPCION,
             @PRECIO_UNITARIO,
             @EXISTENCIA,
