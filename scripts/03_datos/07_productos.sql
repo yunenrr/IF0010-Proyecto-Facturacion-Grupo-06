@@ -39,6 +39,13 @@ BEGIN
             N'PRODUCTO tiene datos parciales; vaciar la tabla antes de cargar.',
             1;
 
+        IF
+            (SELECT COUNT(*) FROM DBO.RUBRO) < 10
+            OR (SELECT COUNT(*) FROM DBO.TIPO_PRODUCTO) < 2
+            THROW 50724,
+            N'Cargue primero dbo.RUBRO y dbo.TIPO_PRODUCTO.',
+            1;
+
         BEGIN TRANSACTION;
 
         WITH RUBRO AS (
@@ -320,6 +327,7 @@ BEGIN
         ARMADO AS (
             SELECT
                 S.N,
+                S.ID_RUBRO,
                 S.CODIGO_RUBRO,
                 S.TIPO,
                 B.TASA,
@@ -351,6 +359,8 @@ BEGIN
 
         INSERT INTO DBO.PRODUCTO (
             CODIGO_INTERNO,
+            ID_TIPO_PRODUCTO,
+            ID_RUBRO,
             DESCRIPCION_PRODUCTO,
             PRECIO_UNITARIO,
             EXISTENCIA,
@@ -371,6 +381,8 @@ BEGIN
                     5
                 )
             ) AS CODIGO_INTERNO,
+            TP.ID_TIPO_PRODUCTO,
+            AR.ID_RUBRO,
             AR.DESCRIPCION AS DESCRIPCION_PRODUCTO,
             CAST(AR.PRECIO AS DECIMAL(18, 5)) AS PRECIO_UNITARIO,
             CASE
@@ -392,7 +404,9 @@ BEGIN
                 -CAST(1 + AR.H_FECHA % @SEGUNDOS_RANGO_CREACION AS INT),
                 @INICIO_FACTURAS
             ) AS FECHA_CREACION
-        FROM ARMADO AS AR;
+        FROM ARMADO AS AR
+        INNER JOIN DBO.TIPO_PRODUCTO AS TP
+            ON TP.CODIGO_TIPO = AR.TIPO;
 
         SET @FILAS_INSERTADAS = @@ROWCOUNT;
 
@@ -403,13 +417,15 @@ BEGIN
         IF
             EXISTS (
                 SELECT 1
-                FROM DBO.PRODUCTO
+                FROM DBO.PRODUCTO AS PR
+                INNER JOIN DBO.TIPO_PRODUCTO AS TP
+                    ON PR.ID_TIPO_PRODUCTO = TP.ID_TIPO_PRODUCTO
                 WHERE
-                    PRECIO_UNITARIO <= 0
-                    OR EXISTENCIA < 0
-                    OR TASA_IMPUESTO NOT IN (0, 0.01, 0.02, 0.04, 0.13)
-                    OR (CODIGO_INTERNO LIKE 'SRV%' AND EXISTENCIA <> 0)
-                    OR FECHA_CREACION >= @INICIO_FACTURAS
+                    PR.PRECIO_UNITARIO <= 0
+                    OR PR.EXISTENCIA < 0
+                    OR PR.TASA_IMPUESTO NOT IN (0, 0.01, 0.02, 0.04, 0.13)
+                    OR (TP.CODIGO_TIPO = 'SRV' AND PR.EXISTENCIA <> 0)
+                    OR PR.FECHA_CREACION >= @INICIO_FACTURAS
             )
             THROW 50723,
             N'Algún producto generado no cumple las reglas de negocio.',

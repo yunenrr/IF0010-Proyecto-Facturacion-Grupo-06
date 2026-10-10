@@ -14,10 +14,10 @@ BEGIN
     SET @CODIGO_ERROR = 0;
     SET @MENSAJE = N'Empresas cargadas.';
 
+    -- PREFIJO SOLO SE USA PARA ARMAR NOMBRES; EL RUBRO SE GUARDA COMO FK
     DECLARE @Rubros TABLE (
-        ID_RUBRO INT NOT NULL PRIMARY KEY,
-        PREFIJO NVARCHAR(50) NOT NULL,
-        ACTIVIDAD NVARCHAR(60) NOT NULL
+        ID_RUBRO TINYINT NOT NULL PRIMARY KEY,
+        PREFIJO NVARCHAR(50) NOT NULL
     );
 
     DECLARE @Sufijos TABLE (
@@ -37,18 +37,23 @@ BEGIN
             N'Se necesitan al menos 100 direcciones.',
             1;
 
-        INSERT INTO @Rubros (ID_RUBRO, PREFIJO, ACTIVIDAD)
+        IF (SELECT COUNT(*) FROM DBO.RUBRO) < 10
+            THROW 50753,
+            N'dbo.RUBRO está incompleta. Cargue primero los rubros.',
+            1;
+
+        INSERT INTO @Rubros (ID_RUBRO, PREFIJO)
         VALUES
-        (1, N'Moda', N'Ropa y Vestimenta'),
-        (2, N'Electro', N'Electrodomésticos'),
-        (3, N'Tecno', N'Tecnología y Computación'),
-        (4, N'Súper', N'Supermercado y Alimentos'),
-        (5, N'Ferretería', N'Ferretería y Construcción'),
-        (6, N'Clínica', N'Salud Privada'),
-        (7, N'Instituto', N'Servicios Educativos'),
-        (8, N'Muebles', N'Muebles y Hogar'),
-        (9, N'Consultores', N'Servicios Profesionales'),
-        (10, N'Transportes', N'Transporte y Logística');
+        (1, N'Moda'),
+        (2, N'Electro'),
+        (3, N'Tecno'),
+        (4, N'Súper'),
+        (5, N'Ferretería'),
+        (6, N'Clínica'),
+        (7, N'Instituto'),
+        (8, N'Muebles'),
+        (9, N'Consultores'),
+        (10, N'Transportes');
 
         INSERT INTO @Sufijos (ID_SUFIJO, SUFIJO)
         VALUES
@@ -74,8 +79,8 @@ BEGIN
 
         BASE AS (
             SELECT
+                R.ID_RUBRO,
                 R.PREFIJO,
-                R.ACTIVIDAD,
                 S.SUFIJO,
                 ROW_NUMBER() OVER (ORDER BY R.ID_RUBRO, S.ID_SUFIJO) AS N
             FROM @Rubros AS R
@@ -85,12 +90,13 @@ BEGIN
         INSERT INTO DBO.EMPRESA
         (
             NOMBRE_COMERCIAL, RAZON_SOCIAL, CEDULA_EMPRESA, ID_DIRECCION,
-            TELEFONO_EMPRESA, CORREO_ELECTRONICO, FECHA_CREACION, ESTA_ACTIVA
+            TELEFONO_EMPRESA, CORREO_ELECTRONICO, FECHA_CREACION, ESTA_ACTIVA,
+            ID_RUBRO
         )
         SELECT
             CONCAT(B.PREFIJO, N' ', B.SUFIJO) AS NOMBRE_COMERCIAL,
             CONCAT(
-                N'Grupo ', B.SUFIJO, N' ', B.ACTIVIDAD, N' S.A.'
+                N'Grupo ', B.SUFIJO, N' ', B.PREFIJO, N' S.A.'
             ) AS RAZON_SOCIAL,
             CONCAT(
                 '3101', RIGHT(CONCAT('000000', B.N), 6)
@@ -103,7 +109,8 @@ BEGIN
             DATEADD(
                 DAY, -CAST(730 + (B.N * 13) % 1000 AS INT), SYSDATETIME()
             ) AS FECHA_CREACION,
-            CASE WHEN B.N % 10 = 0 THEN 0 ELSE 1 END AS ESTA_ACTIVA
+            CASE WHEN B.N % 10 = 0 THEN 0 ELSE 1 END AS ESTA_ACTIVA,
+            B.ID_RUBRO
         FROM BASE AS B
         INNER JOIN DIR AS D
             ON B.N = D.RN;
