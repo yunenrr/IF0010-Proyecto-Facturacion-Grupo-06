@@ -39,7 +39,7 @@ BEGIN
         SET @FILAS_INSERTADAS = @@ROWCOUNT;
 
         IF (SELECT COUNT(*) FROM DBO.TIPO_OPERACION) < 3
-            THROW 50761,
+            THROW 50781,
             N'El catálogo de tipos de operación quedó incompleto.',
             1;
 
@@ -66,5 +66,5 @@ EXEC DBO.USP_CARGAR_TIPO_OPERACION
 PRINT CONCAT('TIPO_OPERACION: ', @FILAS, ' fila(s) nueva(s). ', @MENSAJE);
 
 IF @CODIGO <> 0
-    THROW 50760, @MENSAJE, 1;
+    THROW 50780, @MENSAJE, 1;
 GO
