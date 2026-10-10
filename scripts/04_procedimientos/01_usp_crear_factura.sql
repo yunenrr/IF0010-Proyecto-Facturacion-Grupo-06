@@ -36,7 +36,7 @@ BEGIN
     SET @MENSAJE = N'OK';
 
     DECLARE @CANT_LINEAS INT;
-    DECLARE @RUBRO_EMPRESA VARCHAR(3);
+    DECLARE @ID_RUBRO_EMPRESA TINYINT;
     DECLARE @ID_BORRADOR TINYINT;
     DECLARE @SUBTOTAL DECIMAL(18, 2);
     DECLARE @DESCUENTOS DECIMAL(18, 2);
@@ -51,7 +51,6 @@ BEGIN
     DECLARE @CALC TABLE (
         NUMERO_LINEA INT NOT NULL,
         ID_PRODUCTO INT NOT NULL,
-        DESCRIPCION_LINEA NVARCHAR(150) NOT NULL,
         CANTIDAD DECIMAL(9, 3) NOT NULL,
         PRECIO_UNITARIO DECIMAL(18, 5) NOT NULL,
         TASA_IMPUESTO DECIMAL(5, 4) NOT NULL,
@@ -120,41 +119,10 @@ BEGIN
             )
             THROW 50106, N'Un producto no existe o está inactivo.', 1;
 
-        -- El Rubro de la empresa: primera palabra del nombre comercial
-        SELECT @RUBRO_EMPRESA = R.CODIGO
-        FROM DBO.EMPRESA AS E
-        INNER JOIN (
-            VALUES
-            (N'Moda', 'MOD'),
-            (N'Electro', 'ELE'),
-            (N'Tecno', 'TEC'),
-            (N'Súper', 'SUP'),
-            (N'Ferretería', 'FER'),
-            (N'Clínica', 'CLI'),
-            (N'Instituto', 'INS'),
-            (N'Muebles', 'MUE'),
-            (N'Consultores', 'CON'),
-            (N'Transportes', 'TRA')
-        ) AS R(PREFIJO, CODIGO)
-            ON R.PREFIJO = LEFT(
-                E.NOMBRE_COMERCIAL,
-                CHARINDEX(N' ', E.NOMBRE_COMERCIAL + N' ') - 1
-            )
-        WHERE E.ID_EMPRESA = @ID_EMPRESA;
-
-        -- Rubro del producto: segmento del medio del código (PRD-MOD-00101)
-        IF
-            @RUBRO_EMPRESA IS NULL
-            OR EXISTS (
-                SELECT 1
-                FROM @LINEAS AS L
-                INNER JOIN DBO.PRODUCTO AS P
-                    ON L.ID_PRODUCTO = P.ID_PRODUCTO
-                WHERE SUBSTRING(P.CODIGO_INTERNO, 5, 3) <> @RUBRO_EMPRESA
-            )
-            THROW 50107,
-            N'Un producto no pertenece al rubro de la empresa.',
-            1;
+        -- Rubro de la empresa y de los productos: ambos vienen de la FK ID_RUBRO
+        SELECT @ID_RUBRO_EMPRESA = ID_RUBRO
+        FROM DBO.EMPRESA
+        WHERE ID_EMPRESA = @ID_EMPRESA;
 
         IF
             EXISTS (
@@ -162,8 +130,21 @@ BEGIN
                 FROM @LINEAS AS L
                 INNER JOIN DBO.PRODUCTO AS P
                     ON L.ID_PRODUCTO = P.ID_PRODUCTO
+                WHERE P.ID_RUBRO <> @ID_RUBRO_EMPRESA
+            )
+            THROW 50107, N'Un producto no pertenece al rubro de la empresa.', 1;
+
+        -- Los bienes (PRD) solo se facturan en cantidades enteras
+        IF
+            EXISTS (
+                SELECT 1
+                FROM @LINEAS AS L
+                INNER JOIN DBO.PRODUCTO AS P
+                    ON L.ID_PRODUCTO = P.ID_PRODUCTO
+                INNER JOIN DBO.TIPO_PRODUCTO AS TP
+                    ON P.ID_TIPO_PRODUCTO = TP.ID_TIPO_PRODUCTO
                 WHERE
-                    LEFT(P.CODIGO_INTERNO, 3) = 'PRD'
+                    TP.CODIGO_TIPO = 'PRD'
                     AND L.CANTIDAD <> FLOOR(L.CANTIDAD)
             )
             THROW 50110,
@@ -176,7 +157,6 @@ BEGIN
                 CAST(ROW_NUMBER() OVER (ORDER BY (SELECT NULL)) AS INT)
                     AS NUMERO_LINEA,
                 L.ID_PRODUCTO,
-                P.DESCRIPCION_PRODUCTO,
                 L.CANTIDAD,
                 P.PRECIO_UNITARIO,
                 P.TASA_IMPUESTO,
@@ -190,7 +170,6 @@ BEGIN
             SELECT
                 B.NUMERO_LINEA,
                 B.ID_PRODUCTO,
-                B.DESCRIPCION_PRODUCTO,
                 B.CANTIDAD,
                 B.PRECIO_UNITARIO,
                 B.TASA_IMPUESTO,
@@ -206,7 +185,6 @@ BEGIN
             SELECT
                 S.NUMERO_LINEA,
                 S.ID_PRODUCTO,
-                S.DESCRIPCION_PRODUCTO,
                 S.CANTIDAD,
                 S.PRECIO_UNITARIO,
                 S.TASA_IMPUESTO,
@@ -224,14 +202,13 @@ BEGIN
 
         INSERT INTO @CALC
         (
-            NUMERO_LINEA, ID_PRODUCTO, DESCRIPCION_LINEA, CANTIDAD,
+            NUMERO_LINEA, ID_PRODUCTO, CANTIDAD,
             PRECIO_UNITARIO, TASA_IMPUESTO, MONTO_DESCUENTO,
             SUBTOTAL_LINEA, MONTO_IMPUESTO_LINEA, MONTO_TOTAL_LINEA
         )
         SELECT
             I.NUMERO_LINEA,
             I.ID_PRODUCTO,
-            I.DESCRIPCION_PRODUCTO,
             I.CANTIDAD,
             I.PRECIO_UNITARIO,
             I.TASA_IMPUESTO,
@@ -269,7 +246,7 @@ BEGIN
             ID_TIPO_DOCUMENTO, ID_EMPRESA_EMISORA, ID_CLIENTE_COMPRADOR,
             ID_ESTADO_FACTURA, ID_MONEDA, CONSECUTIVO, FECHA_CREACION,
             FECHA_MODIFICACION, FECHA_EMISION, SUBTOTAL_FACTURA,
-            TOTAL_DESCUENTOS, TOTAL_IMPUESTOS, MONTO_FINAL, OBSERVACIONES
+            TOTAL_DESCUENTOS, TOTAL_IMPUESTOS, MONTO_FINAL
         )
         VALUES
         (
@@ -282,15 +259,14 @@ BEGIN
             ),
             @AHORA, @AHORA,
             @AHORA, -- FECHA_EMISION PROVISIONAL (D1)
-            @SUBTOTAL, @DESCUENTOS, @IMPUESTOS, @MONTO_FINAL,
-            COALESCE(TRIM(@OBSERVACIONES), N'')
+            @SUBTOTAL, @DESCUENTOS, @IMPUESTOS, @MONTO_FINAL
         );
 
         SET @NUEVO_ID = SCOPE_IDENTITY();
 
         INSERT INTO DBO.DETALLE_FACTURA
         (
-            ID_FACTURA, ID_PRODUCTO, NUMERO_LINEA, DESCRIPCION_LINEA,
+            ID_FACTURA, ID_PRODUCTO, NUMERO_LINEA,
             CANTIDAD_FACTURADA, PRECIO_UNITARIO, TASA_IMPUESTO,
             MONTO_DESCUENTO, MONTO_IMPUESTO_LINEA, SUBTOTAL_LINEA,
             MONTO_TOTAL_LINEA
@@ -299,7 +275,6 @@ BEGIN
             @NUEVO_ID AS ID_FACTURA,
             ID_PRODUCTO,
             NUMERO_LINEA,
-            DESCRIPCION_LINEA,
             CANTIDAD,
             PRECIO_UNITARIO,
             TASA_IMPUESTO,
@@ -308,6 +283,11 @@ BEGIN
             SUBTOTAL_LINEA,
             MONTO_TOTAL_LINEA
         FROM @CALC;
+
+        -- Solo se guarda la observación si realmente hay una
+        IF NULLIF(TRIM(@OBSERVACIONES), N'') IS NOT NULL
+            INSERT INTO DBO.FACTURA_OBSERVACION (ID_FACTURA, OBSERVACION)
+            VALUES (@NUEVO_ID, TRIM(@OBSERVACIONES));
 
         COMMIT TRANSACTION;
 
