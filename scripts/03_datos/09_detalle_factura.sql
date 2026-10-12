@@ -31,7 +31,7 @@ BEGIN
     BEGIN TRY
         IF @TAMANO_LOTE IS NULL OR @TAMANO_LOTE < 1
             BEGIN
-                THROW 50794, N'El tamaño del lote debe ser mayor que 0', 1;
+                THROW 50794, N'El tamaÃ±o del lote debe ser mayor que 0', 1;
             END;
 
         IF @ID_MIN IS NULL
@@ -214,7 +214,7 @@ BEGIN
                     )
                     BEGIN
                         THROW 50795,
-                        N'Una línea generada incumple las reglas del detalle.',
+                        N'Una lÃ­nea generada incumple las reglas del detalle.',
                         1;
                     END;
 
@@ -281,7 +281,7 @@ BEGIN
 
         IF @CANTIDAD_INSERTADA = 0
             BEGIN
-                SET @MENSAJE = N'OK: no había facturas pendientes de detalle';
+                SET @MENSAJE = N'OK: no habÃ­a facturas pendientes de detalle';
             END;
     END TRY
     BEGIN CATCH
@@ -306,7 +306,7 @@ EXEC DBO.USP_CARGAR_DETALLES
     @CODIGO_ERROR = @ERROR OUTPUT,
     @MENSAJE = @MSG OUTPUT;
 
--- SI EL SP FALLÓ, EL SCRIPT TAMBIÉN DEBE FALLAR
+-- SI EL SP FALLÃ“, EL SCRIPT TAMBIÃ‰N DEBE FALLAR
 IF @ERROR <> 0
     THROW 50700, @MSG, 1;
 
