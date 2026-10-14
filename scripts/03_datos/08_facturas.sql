@@ -198,27 +198,17 @@ BEGIN
                     CL.ID_CLIENTE AS ID_CLIENTE_COMPRADOR,
                     X.ID_ESTADO AS ID_ESTADO_FACTURA,
                     MO.ID_MONEDA,
-                    CASE
-                        WHEN X.ID_ESTADO = @ID_BORRADOR
-                            THEN CONCAT(
-                                'BOR-',
-                                LEFT(
-                                    REPLACE(CAST(NEWID() AS CHAR(36)), '-', ''),
-                                    16
-                                )
-                            )
-                        ELSE
-                            CONVERT(CHAR(8), X.FECHA, 112)
-                            + REPLACE(CONVERT(CHAR(8), X.FECHA, 108), ':', '')
-                            + '-'
-                            + X.COD_TIPO
-                    END AS CONSECUTIVO,
+
+                    CONVERT(CHAR(8), X.FECHA, 112)
+                    + REPLACE(CONVERT(CHAR(8), X.FECHA, 108), ':', '')
+                    + '-'
+                    + X.COD_TIPO AS CONSECUTIVO,
                     CASE
                         WHEN X.ID_ESTADO = @ID_BORRADOR THEN X.FECHA
                         ELSE DATEADD(MINUTE, -X.MINUTOS_ANTES, X.FECHA)
                     END AS FECHA_CREACION,
                     X.FECHA AS FECHA_MODIFICACION,
-                    X.FECHA AS FECHA_EMISION, -- EN BORRADOR ES PROVISIONAL
+                    X.FECHA AS FECHA_EMISION,
                     0.01 AS SUBTOTAL_FACTURA,
                     0 AS TOTAL_DESCUENTOS,
                     0 AS TOTAL_IMPUESTOS,
@@ -287,7 +277,6 @@ EXEC DBO.USP_CARGAR_FACTURAS
     @CODIGO_ERROR = @ERROR OUTPUT,
     @MENSAJE = @MSG OUTPUT;
 
--- SI EL SP FALLÓ, EL SCRIPT TAMBIÉN DEBE FALLAR
 IF @ERROR <> 0
     THROW 50700, @MSG, 1;
 
