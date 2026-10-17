@@ -38,6 +38,8 @@ BEGIN
     DECLARE @CANT_LINEAS INT;
     DECLARE @ID_RUBRO_EMPRESA TINYINT;
     DECLARE @ID_BORRADOR TINYINT;
+    DECLARE @CODIGO_TIPO CHAR(3);
+    DECLARE @CONSECUTIVO CHAR(20);
     DECLARE @SUBTOTAL DECIMAL(18, 2);
     DECLARE @DESCUENTOS DECIMAL(18, 2);
     DECLARE @IMPUESTOS DECIMAL(18, 2);
@@ -76,11 +78,12 @@ BEGIN
             )
             THROW 50102, N'El cliente no existe.', 1;
 
+        SELECT @CODIGO_TIPO = CODIGO_IDENTIFICADOR
+        FROM DBO.TIPO_DOCUMENTO
+        WHERE ID_TIPO_DOCUMENTO = @ID_TIPO_DOCUMENTO;
+
         IF
-            NOT EXISTS (
-                SELECT 1 FROM DBO.TIPO_DOCUMENTO
-                WHERE ID_TIPO_DOCUMENTO = @ID_TIPO_DOCUMENTO
-            )
+            @CODIGO_TIPO IS NULL
             OR NOT EXISTS (
                 SELECT 1 FROM DBO.MONEDA
                 WHERE ID_MONEDA = @ID_MONEDA
@@ -237,6 +240,12 @@ BEGIN
             @MONTO_FINAL = SUM(MONTO_TOTAL_LINEA)
         FROM @CALC;
 
+        SET
+            @CONSECUTIVO = CONVERT(CHAR(8), @AHORA, 112)
+            + REPLACE(CONVERT(CHAR(8), @AHORA, 108), ':', '')
+            + '-'
+            + @CODIGO_TIPO;
+
         --Transacción: encabezado más líneas:
         BEGIN TRANSACTION;
 
@@ -250,14 +259,9 @@ BEGIN
         VALUES
         (
             @ID_TIPO_DOCUMENTO, @ID_EMPRESA, @ID_CLIENTE,
-            @ID_BORRADOR, @ID_MONEDA,
-            -- CONSECUTIVO PROVISIONAL (D1): SE REEMPLAZA AL EMITIR
-            CONCAT(
-                'BOR-',
-                LEFT(REPLACE(CAST(NEWID() AS CHAR(36)), '-', ''), 16)
-            ),
+            @ID_BORRADOR, @ID_MONEDA, @CONSECUTIVO,
             @AHORA, @AHORA,
-            @AHORA, -- FECHA_EMISION PROVISIONAL (D1)
+            @AHORA, -- FECHA_EMISION PROVISIONAL: SE ACTUALIZA AL EMITIR
             @SUBTOTAL, @DESCUENTOS, @IMPUESTOS, @MONTO_FINAL
         );
 
@@ -297,8 +301,23 @@ BEGIN
             ROLLBACK TRANSACTION;
 
         SET @ID_FACTURA = NULL;
-        SET @CODIGO_ERROR = ERROR_NUMBER();
-        SET @MENSAJE = ERROR_MESSAGE();
+
+        -- Choque con el índice único del consecutivo: otro comprobante se
+        -- creó o emitió en el mismo segundo.
+        IF
+            ERROR_NUMBER() IN (2601, 2627)
+            AND ERROR_MESSAGE() LIKE N'%NC_FACTURA_CONSECUTIVO%'
+            BEGIN
+                SET @CODIGO_ERROR = 50111;
+                SET
+                    @MENSAJE = N'Ya existe un comprobante con ese '
+                    + N'consecutivo. Intente de nuevo.';
+            END
+        ELSE
+            BEGIN
+                SET @CODIGO_ERROR = ERROR_NUMBER();
+                SET @MENSAJE = ERROR_MESSAGE();
+            END;
     END CATCH;
 END;
 GO
