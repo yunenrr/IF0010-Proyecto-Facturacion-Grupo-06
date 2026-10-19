@@ -240,11 +240,7 @@ BEGIN
             @MONTO_FINAL = SUM(MONTO_TOTAL_LINEA)
         FROM @CALC;
 
-        SET
-            @CONSECUTIVO = CONVERT(CHAR(8), @AHORA, 112)
-            + REPLACE(CONVERT(CHAR(8), @AHORA, 108), ':', '')
-            + '-'
-            + @CODIGO_TIPO;
+        SET @CONSECUTIVO = DBO.UFN_CLAVE_COMPROBANTE(@AHORA, @CODIGO_TIPO);
 
         --Transacción: encabezado más líneas:
         BEGIN TRANSACTION;
@@ -261,7 +257,7 @@ BEGIN
             @ID_TIPO_DOCUMENTO, @ID_EMPRESA, @ID_CLIENTE,
             @ID_BORRADOR, @ID_MONEDA, @CONSECUTIVO,
             @AHORA, @AHORA,
-            @AHORA, -- FECHA_EMISION PROVISIONAL: SE ACTUALIZA AL EMITIR
+            @AHORA,
             @SUBTOTAL, @DESCUENTOS, @IMPUESTOS, @MONTO_FINAL
         );
 
@@ -302,8 +298,6 @@ BEGIN
 
         SET @ID_FACTURA = NULL;
 
-        -- Choque con el índice único del consecutivo: otro comprobante se
-        -- creó o emitió en el mismo segundo.
         IF
             ERROR_NUMBER() IN (2601, 2627)
             AND ERROR_MESSAGE() LIKE N'%NC_FACTURA_CONSECUTIVO%'

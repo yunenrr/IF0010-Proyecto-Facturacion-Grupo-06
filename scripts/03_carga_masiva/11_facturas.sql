@@ -198,11 +198,8 @@ BEGIN
                     CL.ID_CLIENTE AS ID_CLIENTE_COMPRADOR,
                     X.ID_ESTADO AS ID_ESTADO_FACTURA,
                     MO.ID_MONEDA,
-
-                    CONVERT(CHAR(8), X.FECHA, 112)
-                    + REPLACE(CONVERT(CHAR(8), X.FECHA, 108), ':', '')
-                    + '-'
-                    + X.COD_TIPO AS CONSECUTIVO,
+                    DBO.UFN_CLAVE_COMPROBANTE(X.FECHA, X.COD_TIPO)
+                        AS CONSECUTIVO,
                     CASE
                         WHEN X.ID_ESTADO = @ID_BORRADOR THEN X.FECHA
                         ELSE DATEADD(MINUTE, -X.MINUTOS_ANTES, X.FECHA)
