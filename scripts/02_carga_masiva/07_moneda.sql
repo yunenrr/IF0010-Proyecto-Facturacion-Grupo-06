@@ -1,0 +1,118 @@
+USE SISTEMA_FACTURACION;
+GO
+
+CREATE OR ALTER PROCEDURE DBO.USP_REGISTRAR_MONEDAS_BASE (
+    @CANTIDAD_INSERTADA INT OUTPUT,
+    @CODIGO_ERROR INT OUTPUT,
+    @MENSAJE NVARCHAR(4000) OUTPUT
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    SET @CANTIDAD_INSERTADA = 0;
+    SET @CODIGO_ERROR = 0;
+    SET @MENSAJE = N'OK';
+
+    DECLARE @MONEDAS_BASE TABLE (
+        ID_MONEDA TINYINT NOT NULL,
+        CODIGO_MONEDA CHAR(3) NOT NULL,
+        SIMBOLO NVARCHAR(5) NOT NULL,
+        DESCRIPCION NVARCHAR(50) NOT NULL
+    );
+
+    INSERT INTO @MONEDAS_BASE (
+        ID_MONEDA,
+        CODIGO_MONEDA,
+        SIMBOLO,
+        DESCRIPCION
+    )
+    VALUES
+    (1, 'CRC', NCHAR(8353), N'Colón costarricense'),
+    (2, 'USD', N'$', N'Dólar estadounidense'),
+    (3, 'EUR', NCHAR(8364), N'Euro');
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+
+        IF
+            EXISTS (
+                SELECT 1
+                FROM DBO.MONEDA AS M WITH (UPDLOCK, HOLDLOCK)
+                INNER JOIN @MONEDAS_BASE AS B
+                    ON M.ID_MONEDA = B.ID_MONEDA
+                WHERE M.CODIGO_MONEDA <> B.CODIGO_MONEDA
+            )
+            BEGIN
+                THROW 50771,
+                N'El ID 1, 2 o 3 ya pertenece a otra moneda',
+                1;
+            END;
+
+        INSERT INTO DBO.MONEDA (
+            ID_MONEDA,
+            CODIGO_MONEDA,
+            SIMBOLO,
+            DESCRIPCION
+        )
+        SELECT
+            B.ID_MONEDA,
+            B.CODIGO_MONEDA,
+            B.SIMBOLO,
+            B.DESCRIPCION
+        FROM @MONEDAS_BASE AS B
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM DBO.MONEDA AS M WITH (UPDLOCK, HOLDLOCK)
+            WHERE M.CODIGO_MONEDA = B.CODIGO_MONEDA
+        );
+
+        SET @CANTIDAD_INSERTADA = @@ROWCOUNT;
+
+        COMMIT TRANSACTION;
+
+        IF @CANTIDAD_INSERTADA = 0
+            BEGIN
+                SET @MENSAJE = N'OK: las monedas base ya existían';
+            END;
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE() <> 0
+            BEGIN
+                ROLLBACK TRANSACTION;
+            END;
+
+        SET @CANTIDAD_INSERTADA = 0;
+        SET @CODIGO_ERROR = ERROR_NUMBER();
+        SET @MENSAJE = ERROR_MESSAGE();
+    END CATCH;
+END;
+GO
+
+DECLARE @CANTIDAD INT;
+DECLARE @ERROR INT;
+DECLARE @MSG NVARCHAR(4000);
+
+EXEC DBO.USP_REGISTRAR_MONEDAS_BASE
+    @CANTIDAD_INSERTADA = @CANTIDAD OUTPUT,
+    @CODIGO_ERROR = @ERROR OUTPUT,
+    @MENSAJE = @MSG OUTPUT;
+
+-- SI EL SP FALLÓ, EL SCRIPT TAMBIÉN DEBE FALLAR
+IF @ERROR <> 0
+    THROW 50700, @MSG, 1;
+
+SELECT
+    @CANTIDAD AS CANTIDAD_INSERTADA,
+    @ERROR AS CODIGO_ERROR,
+    @MSG AS MENSAJE;
+
+SELECT
+    ID_MONEDA,
+    CODIGO_MONEDA,
+    SIMBOLO,
+    DESCRIPCION
+FROM DBO.MONEDA
+ORDER BY ID_MONEDA;
+GO
