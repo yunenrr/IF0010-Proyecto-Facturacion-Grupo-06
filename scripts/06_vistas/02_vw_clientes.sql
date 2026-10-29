@@ -12,6 +12,7 @@ WITH RESUMEN_FACTURAS AS (
                 WHEN
                     E.ESTADO IN ('EMITIDA', 'PAGADA')
                     AND F.FECHA_EMISION >= DATEADD(MONTH, -6, SYSDATETIME())
+                    AND F.FECHA_EMISION <= SYSDATETIME()
                     THEN 1
                 ELSE 0
             END
