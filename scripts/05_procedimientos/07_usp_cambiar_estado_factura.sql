@@ -74,10 +74,9 @@ BEGIN
         IF @NUEVO_ESTADO = 'EMITIDA'
             BEGIN
                 SET
-                    @CONSECUTIVO = CONVERT(CHAR(8), @FECHA_ACTUAL, 112)
-                    + REPLACE(CONVERT(CHAR(8), @FECHA_ACTUAL, 108), ':', '')
-                    + '-'
-                    + @CODIGO_TIPO;
+                    @CONSECUTIVO = DBO.UFN_CLAVE_COMPROBANTE(
+                        @FECHA_ACTUAL, @CODIGO_TIPO
+                    );
 
                 DECLARE @BIENES_DISTINTOS INT;
                 SELECT @BIENES_DISTINTOS = COUNT(DISTINCT DF.ID_PRODUCTO)
