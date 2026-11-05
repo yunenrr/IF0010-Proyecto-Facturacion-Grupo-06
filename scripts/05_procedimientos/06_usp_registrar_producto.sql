@@ -1,3 +1,8 @@
+/* DBO.USP_REGISTRAR_PRODUCTO — REGISTRA UN BIEN (PRD) O UN SERVICIO (SRV).
+   UN SERVICIO REQUIERE @DURACION_ESTIMADA_MIN Y @SE_BRINDA_A_DOMICILIO Y SE
+   REGISTRA TAMBIÉN EN DBO.SERVICIO, EN LA MISMA TRANSACCIÓN. UN BIEN NO
+   ADMITE ESOS DOS PARÁMETROS. */
+
 USE SISTEMA_FACTURACION;
 GO
 
@@ -11,7 +16,9 @@ CREATE OR ALTER PROCEDURE DBO.USP_REGISTRAR_PRODUCTO (
     @ID_PRODUCTO INT OUTPUT,
     @CODIGO_INTERNO VARCHAR(20) OUTPUT,
     @CODIGO_ERROR INT OUTPUT,
-    @MENSAJE NVARCHAR(4000) OUTPUT
+    @MENSAJE NVARCHAR(4000) OUTPUT,
+    @DURACION_ESTIMADA_MIN SMALLINT = NULL,
+    @SE_BRINDA_A_DOMICILIO BIT = NULL
 )
 AS
 BEGIN
@@ -75,6 +82,35 @@ BEGIN
                 1;
             END;
 
+        IF
+            @CODIGO_TIPO = 'SRV'
+            AND (
+                @DURACION_ESTIMADA_MIN IS NULL
+                OR @SE_BRINDA_A_DOMICILIO IS NULL
+            )
+            BEGIN
+                THROW 50508,
+                N'Un servicio requiere duración y modalidad a domicilio',
+                1;
+            END;
+
+        IF @CODIGO_TIPO = 'SRV' AND @DURACION_ESTIMADA_MIN <= 0
+            BEGIN
+                THROW 50509, N'La duración estimada debe ser mayor que 0', 1;
+            END;
+
+        IF
+            @CODIGO_TIPO <> 'SRV'
+            AND (
+                @DURACION_ESTIMADA_MIN IS NOT NULL
+                OR @SE_BRINDA_A_DOMICILIO IS NOT NULL
+            )
+            BEGIN
+                THROW 50510,
+                N'Un bien no admite duración ni modalidad a domicilio',
+                1;
+            END;
+
         SET @PREFIJO = @CODIGO_TIPO + '-' + @CODIGO_RUBRO + '-';
 
         BEGIN TRANSACTION;
@@ -120,6 +156,20 @@ BEGIN
         );
 
         SET @ID_PRODUCTO = SCOPE_IDENTITY();
+
+        IF @CODIGO_TIPO = 'SRV'
+            BEGIN
+                INSERT INTO DBO.SERVICIO (
+                    ID_PRODUCTO,
+                    DURACION_ESTIMADA_MIN,
+                    SE_BRINDA_A_DOMICILIO
+                )
+                VALUES (
+                    @ID_PRODUCTO,
+                    @DURACION_ESTIMADA_MIN,
+                    @SE_BRINDA_A_DOMICILIO
+                );
+            END;
 
         COMMIT TRANSACTION;
     END TRY
