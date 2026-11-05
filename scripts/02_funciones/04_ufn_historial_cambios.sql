@@ -1,6 +1,9 @@
 /* DBO.UFN_HISTORIAL_CAMBIOS — CONSULTA UNIFICADA DEL HISTORIAL DE CAMBIOS.
-   UNE LAS CUATRO TABLAS DE AUDITORÍA (FACTURA, DETALLE_FACTURA, CLIENTE Y
-   PRODUCTO) EN UNA SOLA LÍNEA DE TIEMPO CON COLUMNAS COMUNES. */
+   UNE LAS OCHO TABLAS DE AUDITORÍA (FACTURA, DETALLE_FACTURA, CLIENTE,
+   CLIENTE_FISICO, CLIENTE_JURIDICO, DIRECCION, SERVICIO Y PRODUCTO) EN UNA
+   SOLA LÍNEA DE TIEMPO CON COLUMNAS COMUNES. EN INSERT EL DETALLE MUESTRA LA
+   VERSIÓN NUEVA; EN UPDATE, LA VERSIÓN ANTERIOR AL CAMBIO; EN DELETE, LA
+   ÚLTIMA VERSIÓN. */
 
 USE SISTEMA_FACTURACION;
 GO
@@ -90,6 +93,70 @@ RETURN (
                 END
             ) AS DETALLE
         FROM DBO.CLIENTE_HISTORIAL AS CH
+
+        UNION ALL
+
+        SELECT
+            'CLIENTE_FISICO' AS TABLA,
+            CFH.ID_CLIENTE AS ID_REGISTRO,
+            CFH.ID_TIPO_OPERACION,
+            CFH.USUARIO_RESPONSABLE,
+            CFH.FECHA_CAMBIO,
+            CONCAT(
+                N'Nombre ', CFH.NOMBRE,
+                N' | Primer apellido ', CFH.PRIMER_APELLIDO,
+                N' | Segundo apellido ', CFH.SEGUNDO_APELLIDO
+            ) AS DETALLE
+        FROM DBO.CLIENTE_FISICO_HISTORIAL AS CFH
+
+        UNION ALL
+
+        SELECT
+            'CLIENTE_JURIDICO' AS TABLA,
+            CJH.ID_CLIENTE AS ID_REGISTRO,
+            CJH.ID_TIPO_OPERACION,
+            CJH.USUARIO_RESPONSABLE,
+            CJH.FECHA_CAMBIO,
+            CONCAT(
+                N'Razón social ', CJH.RAZON_SOCIAL,
+                N' | Nombre comercial ', CJH.NOMBRE_COMERCIAL
+            ) AS DETALLE
+        FROM DBO.CLIENTE_JURIDICO_HISTORIAL AS CJH
+
+        UNION ALL
+
+        SELECT
+            'DIRECCION' AS TABLA,
+            DRH.ID_DIRECCION AS ID_REGISTRO,
+            DRH.ID_TIPO_OPERACION,
+            DRH.USUARIO_RESPONSABLE,
+            DRH.FECHA_CAMBIO,
+            CONCAT(
+                N'Distrito ', DI.NOMBRE_DISTRITO,
+                N' | Otras señas ',
+                CASE
+                    WHEN IS_ROLEMEMBER('DBA') = 1 THEN DRH.OTRAS_SENAS
+                    ELSE N'***'
+                END
+            ) AS DETALLE
+        FROM DBO.DIRECCION_HISTORIAL AS DRH
+        INNER JOIN DBO.DISTRITO AS DI
+            ON DRH.ID_DISTRITO = DI.ID_DISTRITO
+
+        UNION ALL
+
+        SELECT
+            'SERVICIO' AS TABLA,
+            SH.ID_PRODUCTO AS ID_REGISTRO,
+            SH.ID_TIPO_OPERACION,
+            SH.USUARIO_RESPONSABLE,
+            SH.FECHA_CAMBIO,
+            CONCAT(
+                N'Duración ', SH.DURACION_ESTIMADA_MIN,
+                N' min | A domicilio ',
+                CASE WHEN SH.SE_BRINDA_A_DOMICILIO = 1 THEN N'Sí' ELSE N'No' END
+            ) AS DETALLE
+        FROM DBO.SERVICIO_HISTORIAL AS SH
 
         UNION ALL
 
