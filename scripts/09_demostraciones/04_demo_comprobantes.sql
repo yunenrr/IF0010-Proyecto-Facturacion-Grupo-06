@@ -73,7 +73,7 @@ DECLARE @ID_MONEDA TINYINT = (
 
 IF @ID_EMPRESA IS NULL OR @ID_CLIENTE IS NULL
     BEGIN
-        SELECT N'No hay datos suficientes para la demostración.' AS ERROR;
+        SELECT N'No hay datos suficientes para la demostración.' AS AVISO;
         RETURN;
     END;
 
