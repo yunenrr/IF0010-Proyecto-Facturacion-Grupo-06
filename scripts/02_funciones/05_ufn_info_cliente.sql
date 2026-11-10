@@ -24,11 +24,34 @@ RETURN
                     THEN 1
                 ELSE 0
             END AS VE_ENMASCARADO
+    ),
+
+    CLIENTES AS (
+        SELECT
+            C.CEDULA_CLIENTE,
+            C.CORREO_CLIENTE,
+            C.TELEFONO_CLIENTE,
+            C.FECHA_REGISTRO,
+            C.FECHA_ACTUALIZACION,
+            CASE
+                WHEN CF.ID_CLIENTE IS NOT NULL
+                    THEN
+                        CONCAT(
+                            CF.NOMBRE, N' ', CF.PRIMER_APELLIDO, N' ',
+                            CF.SEGUNDO_APELLIDO
+                        )
+                ELSE CJ.RAZON_SOCIAL
+            END AS NOMBRE
+        FROM DBO.CLIENTE AS C
+        LEFT JOIN DBO.CLIENTE_FISICO AS CF
+            ON C.ID_CLIENTE = CF.ID_CLIENTE
+        LEFT JOIN DBO.CLIENTE_JURIDICO AS CJ
+            ON C.ID_CLIENTE = CJ.ID_CLIENTE
     )
 
     SELECT
         C.CEDULA_CLIENTE AS CEDULA,
-        C.NOMBRE_CLIENTE AS NOMBRE,
+        C.NOMBRE,
         C.FECHA_REGISTRO,
         C.FECHA_ACTUALIZACION,
         CASE
@@ -45,7 +68,7 @@ RETURN
             WHEN R.VE_TODO = 1 THEN C.TELEFONO_CLIENTE
             ELSE '****' + RIGHT(C.TELEFONO_CLIENTE, 4)
         END AS TELEFONO
-    FROM DBO.CLIENTE AS C
+    FROM CLIENTES AS C
     CROSS APPLY R
     WHERE
         C.CEDULA_CLIENTE = LTRIM(RTRIM(@CEDULA))
